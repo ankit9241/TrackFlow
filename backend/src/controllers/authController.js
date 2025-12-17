@@ -1,0 +1,107 @@
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
+// In authController.js
+const registerUser = async (req, res, next) => {
+  const { email, password } = req.body;
+  console.log('Registration attempt for:', email);
+
+  try {
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    console.log('User search result:', user ? 'User exists' : 'No user found');
+    
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create new user
+    user = new User({
+      email,
+      password
+    });
+
+    console.log('About to save user');
+    await user.save();
+    console.log('User saved successfully');
+
+    // Generate token
+    const token = generateToken(user._id);
+    console.log('Token generated');
+
+    res.status(201).json({
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    next(error);
+  }
+};
+
+// @desc    Authenticate user & get token
+// @route   POST /api/auth/login
+// @access  Public
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Check for user email and explicitly include the password field
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (isMatch) {
+      const token = generateToken(user._id);
+      res.json({
+        token,
+        user: {
+          _id: user._id,
+          email: user.email,
+          createdAt: user.createdAt
+        }
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid email or password' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get user profile
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Generate JWT
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE
+  });
+};
+
+export {
+  registerUser,
+  loginUser,
+  getMe
+};

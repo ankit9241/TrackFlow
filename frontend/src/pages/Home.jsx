@@ -74,7 +74,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= HOW IT WORKS ================= */}
       <section className="max-w-7xl mx-auto px-4 py-20">
         <div className="text-center mb-20">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -123,7 +122,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= PHILOSOPHY / VALUE ================= */}
       <section className="bg-white border-t border-slate-100 py-20 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <SparklesIcon className="w-8 h-8 text-emerald-600 mx-auto mb-6" />
@@ -140,7 +138,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= FINAL CTA ================= */}
       <section className="py-20 px-4 bg-teal-50 border-t border-teal-100">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8">

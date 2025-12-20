@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: trackflow-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mongodb
+          property:connectionString
+    plan: free
+    numInstances: 1

@@ -8,8 +8,7 @@ import {
 } from "date-fns";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
-import api from "../api/axios";
-import { toggleHabitCompletion, getHabitCompletions } from "../api/api";
+import api, { toggleHabitCompletion, getHabitCompletions } from "../api/api";
 
 import HabitGrid from "../components/HabitGrid";
 import MobileDayView from "../components/MobileDayView";
@@ -147,18 +146,18 @@ const Dashboard = () => {
         prev.map((h) =>
           h._id === habitId
             ? {
-                ...h,
-                completions: [
-                  ...(h.completions || []),
-                  {
-                    _id: `temp-${Date.now()}`,
-                    habit: habitId,
-                    date: dateStr,
-                    completed: !isHabitCompleted(habitId, dateStr),
-                    isOptimistic: true,
-                  },
-                ],
-              }
+              ...h,
+              completions: [
+                ...(h.completions || []),
+                {
+                  _id: `temp-${Date.now()}`,
+                  habit: habitId,
+                  date: dateStr,
+                  completed: !isHabitCompleted(habitId, dateStr),
+                  isOptimistic: true,
+                },
+              ],
+            }
             : h
         )
       );
@@ -175,14 +174,14 @@ const Dashboard = () => {
         prev.map((h) =>
           h._id === habitId
             ? {
-                ...h,
-                completions: [
-                  ...h.completions.filter(
-                    (c) => formatDate(c.date) !== dateStr || c.isOptimistic
-                  ),
-                  { ...entry, date: formatDate(entry.date) },
-                ],
-              }
+              ...h,
+              completions: [
+                ...h.completions.filter(
+                  (c) => formatDate(c.date) !== dateStr || c.isOptimistic
+                ),
+                { ...entry, date: formatDate(entry.date) },
+              ],
+            }
             : h
         )
       );

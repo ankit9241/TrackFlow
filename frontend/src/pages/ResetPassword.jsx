@@ -5,7 +5,7 @@ import {
   LockClosedIcon,
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
-import axios from 'axios';
+import api from '../api/api';
 import toast from 'react-hot-toast';
 
 const ResetPassword = () => {
@@ -25,8 +25,8 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      await axios.put(
-        `http://localhost:5000/api/auth/resetpassword/${token}`,
+      await api.put(
+        `/auth/resetpassword/${token}`,
         { password }
       );
       toast.success('Password updated');

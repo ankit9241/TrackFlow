@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KeyIcon, EnvelopeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import axios from 'axios';
+import api from '../api/api';
 import toast from 'react-hot-toast';
 
 const ForgotPassword = () => {
@@ -13,7 +13,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/auth/forgotpassword', { email });
+      await api.post('/auth/forgotpassword', { email });
       setSent(true);
       toast.success('Reset link sent to your email');
     } catch (error) {

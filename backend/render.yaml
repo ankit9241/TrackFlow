@@ -3,7 +3,7 @@ services:
     name: trackflow-backend
     env: node
     buildCommand: npm install --production
-    startCommand: node src/server.js
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production

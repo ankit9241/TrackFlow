@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   format,
   isSameDay,
   parseISO,
   startOfMonth,
   endOfMonth,
+  subMonths,
+  addMonths,
 } from "date-fns";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import api, { toggleHabitCompletion, getHabitCompletions } from "../api/api";
 
@@ -20,13 +23,14 @@ import AnalyticsInsights from "../components/analytics/AnalyticsInsights";
 import HabitModal from "../components/modals/HabitModal";
 
 const Dashboard = () => {
+  const { currentUser } = useAuth();
   const [habits, setHabits] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const stats = calculatePremiumStats(habits);
+  const stats = calculatePremiumStats(habits, selectedDate);
 
   const handleHabitSubmit = async (habitData) => {
     if (editingHabit) {
@@ -88,12 +92,13 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
 
+      const today = new Date();
+      const fetchStart = subMonths(startOfMonth(selectedDate), 6);
+      const fetchEnd = endOfMonth(today);
+
       const [habitsRes, completionsRes] = await Promise.all([
         api.get("/habits"),
-        getHabitCompletions(
-          startOfMonth(selectedDate),
-          endOfMonth(selectedDate)
-        ),
+        getHabitCompletions(fetchStart, fetchEnd),
       ]);
 
       const completionsMap = new Map();
@@ -177,7 +182,7 @@ const Dashboard = () => {
               ...h,
               completions: [
                 ...h.completions.filter(
-                  (c) => formatDate(c.date) !== dateStr || c.isOptimistic
+                  (c) => formatDate(c.date) !== dateStr && !c.isOptimistic
                 ),
                 { ...entry, date: formatDate(entry.date) },
               ],
@@ -211,25 +216,56 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 pt-20 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Track<span className="text-teal-600">Flow</span></h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Hello, <span className="text-teal-600">{currentUser?.name?.split(' ')[0] || 'User'}</span>
+            </h1>
             <p className="text-sm text-gray-500">
               Track your habits and build better routines
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingHabit(null);
-              setIsHabitModalOpen(true);
-            }}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-teal-700 hover:bg-teal-800"
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Add Habit
-          </button>
+
+          <div className="flex flex-row items-center gap-3 w-full md:w-auto">
+            {/* Mobile Navigation - Hidden on desktop as it's now in the grid */}
+            <div className="flex md:hidden flex-1 items-center justify-between bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
+              <button
+                onClick={() => setSelectedDate(subMonths(selectedDate, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                title="Previous Month"
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+              </button>
+
+              <div className="text-center px-1">
+                <span className="text-xs font-bold text-gray-900 block min-w-[80px]">
+                  {format(selectedDate, "MMM yyyy")}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setSelectedDate(addMonths(selectedDate, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                title="Next Month"
+              >
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setEditingHabit(null);
+                setIsHabitModalOpen(true);
+              }}
+              className="inline-flex items-center px-4 py-2.5 md:px-5 text-sm font-semibold rounded-xl text-white bg-teal-600 hover:bg-teal-700 shadow-sm transition-all active:scale-95 whitespace-nowrap"
+            >
+              <PlusIcon className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">Add Habit</span>
+              <span className="md:hidden ml-1">Habit</span>
+            </button>
+          </div>
         </div>
 
         <OverviewCards stats={stats} />
@@ -237,11 +273,13 @@ const Dashboard = () => {
         <div className="mb-8 hidden md:block">
           <HabitGrid
             habits={habits}
-            currentDate={new Date()}
+            currentDate={selectedDate}
             onToggleHabit={handleToggleHabit}
             isHabitCompleted={isHabitCompleted}
             onEditHabit={handleEditHabit}
             onDeleteHabit={handleDeleteHabit}
+            onPrevMonth={() => setSelectedDate(subMonths(selectedDate, 1))}
+            onNextMonth={() => setSelectedDate(addMonths(selectedDate, 1))}
           />
         </div>
 
@@ -257,7 +295,7 @@ const Dashboard = () => {
           />
         </div>
 
-        <AnalyticsTrends habits={habits} stats={stats} />
+        <AnalyticsTrends habits={habits} stats={stats} selectedDate={selectedDate} />
         {/* <AnalyticsHabits rankings={stats.rankings} overview={stats.overview} /> */}
         <AnalyticsInsights stats={stats} habits={habits} />
 

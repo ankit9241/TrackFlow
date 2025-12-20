@@ -5,47 +5,44 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const HabitModal = ({ isOpen, onClose, onSubmit, habit = null }) => {
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [isWholeMonth, setIsWholeMonth] = useState(true);
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState('');
+  const [isForever, setIsForever] = useState(true);
 
   useEffect(() => {
     if (habit && isOpen) {
       setName(habit.name || '');
       const hStart = habit.startDate
         ? format(new Date(habit.startDate), 'yyyy-MM-dd')
-        : format(startOfMonth(new Date()), 'yyyy-MM-dd');
+        : format(new Date(), 'yyyy-MM-dd');
+
       const hEnd = habit.endDate
         ? format(new Date(habit.endDate), 'yyyy-MM-dd')
-        : format(endOfMonth(new Date()), 'yyyy-MM-dd');
+        : '';
 
       setStartDate(hStart);
       setEndDate(hEnd);
-
-      const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
-      const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
-      setIsWholeMonth(hStart === monthStart && hEnd === monthEnd);
+      setIsForever(!habit.endDate);
     } else if (!habit && isOpen) {
       setName('');
-      setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-      setEndDate(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
-      setIsWholeMonth(true);
+      setStartDate(format(new Date(), 'yyyy-MM-dd'));
+      setEndDate('');
+      setIsForever(true);
     }
   }, [habit, isOpen]);
 
   useEffect(() => {
-    if (isWholeMonth) {
-      setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-      setEndDate(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+    if (isForever) {
+      setEndDate('');
     }
-  }, [isWholeMonth]);
+  }, [isForever]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
       name,
       startDate,
-      endDate: endDate || null,
+      endDate: isForever ? null : (endDate || null),
     });
   };
 
@@ -104,14 +101,13 @@ const HabitModal = ({ isOpen, onClose, onSubmit, habit = null }) => {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setIsWholeMonth(!isWholeMonth)}
-                      className={`text-xs px-2 py-1 rounded-full border transition ${
-                        isWholeMonth
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-600 font-bold'
-                          : 'bg-slate-50 border-slate-200 text-slate-500'
-                      }`}
+                      onClick={() => setIsForever(!isForever)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 ${isForever
+                          ? 'bg-emerald-500 border-emerald-500 text-white font-bold shadow-sm'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 font-medium'
+                        }`}
                     >
-                      Whole Month
+                      Forever
                     </button>
                   </div>
 
@@ -125,7 +121,7 @@ const HabitModal = ({ isOpen, onClose, onSubmit, habit = null }) => {
                         value={startDate}
                         onChange={(e) => {
                           setStartDate(e.target.value);
-                          setIsWholeMonth(false);
+                          setIsForever(false);
                         }}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
@@ -139,7 +135,7 @@ const HabitModal = ({ isOpen, onClose, onSubmit, habit = null }) => {
                         value={endDate}
                         onChange={(e) => {
                           setEndDate(e.target.value);
-                          setIsWholeMonth(false);
+                          setIsForever(false);
                         }}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                       />

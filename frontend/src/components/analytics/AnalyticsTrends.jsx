@@ -17,7 +17,9 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  startOfMonth
+  startOfMonth,
+  endOfMonth,
+  isSameMonth
 } from 'date-fns';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -58,12 +60,14 @@ const WeeklyTooltip = ({ active, payload }) => {
   return null;
 };
 
-const AnalyticsTrends = ({ habits, stats }) => {
+const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
   const activityData = useMemo(() => {
     const data = [];
     const today = new Date();
-    const start = startOfMonth(today);
-    const days = eachDayOfInterval({ start, end: today });
+    const isCurrentMonth = isSameMonth(selectedDate, today);
+    const start = startOfMonth(selectedDate);
+    const end = isCurrentMonth ? today : endOfMonth(selectedDate);
+    const days = eachDayOfInterval({ start, end });
 
     days.forEach(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
@@ -71,15 +75,26 @@ const AnalyticsTrends = ({ habits, stats }) => {
       let totalHabitsActive = 0;
 
       habits.forEach(habit => {
-        totalHabitsActive++;
-        const isCompleted = habit.completions?.some(c => {
-          const cDate =
-            typeof c.date === 'string'
-              ? c.date
-              : format(new Date(c.date), 'yyyy-MM-dd');
-          return cDate === dateStr && c.completed;
-        });
-        if (isCompleted) completedCount++;
+        const hStart = habit.startDate ? new Date(habit.startDate) : null;
+        const hEnd = habit.endDate ? new Date(habit.endDate) : null;
+        const compareDay = new Date(date);
+        compareDay.setHours(0, 0, 0, 0);
+
+        const isActive =
+          (!hStart || compareDay >= new Date(hStart).setHours(0, 0, 0, 0)) &&
+          (!hEnd || compareDay <= new Date(hEnd).setHours(0, 0, 0, 0));
+
+        if (isActive) {
+          totalHabitsActive++;
+          const isCompleted = habit.completions?.some(c => {
+            const cDate =
+              typeof c.date === 'string'
+                ? c.date
+                : format(new Date(c.date), 'yyyy-MM-dd');
+            return cDate === dateStr && c.completed;
+          });
+          if (isCompleted) completedCount++;
+        }
       });
 
       const percentage =
@@ -94,12 +109,14 @@ const AnalyticsTrends = ({ habits, stats }) => {
     });
 
     return data;
-  }, [habits]);
+  }, [habits, selectedDate]);
 
   const weeklyData = useMemo(() => {
     const data = [];
     const today = new Date();
-    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const isCurrentMonth = isSameMonth(selectedDate, today);
+    const referenceDate = isCurrentMonth ? today : endOfMonth(selectedDate);
+    const currentWeekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
 
     for (let i = 4; i >= 0; i--) {
       const weekStart = subDays(currentWeekStart, i * 7);

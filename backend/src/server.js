@@ -91,6 +91,7 @@ import habitRoutes from './routes/habits.js';
 import trackerRoutes from './routes/tracker.js';
 import analyticsRoutes from './routes/analytics.js';
 import habitCompletionRoutes from './routes/habitCompletionRoutes.js';
+import contactRoutes from './routes/contact.js';
 
 
 app.use('/api/auth', authRoutes);
@@ -98,6 +99,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/tracker', trackerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/habit-completions', habitCompletionRoutes);
+app.use('/api/contact', contactRoutes);
 // Basic route for testing
 app.get('/', (req, res) => {
   res.send('TrackFlow API is running');

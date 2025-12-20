@@ -10,6 +10,16 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
   },
+  name: {
+    type: String,
+    required: [true, 'Please provide a name'],
+    trim: true
+  },
+  bio: {
+    type: String,
+    maxlength: [160, 'Bio cannot be more than 160 characters'],
+    default: ''
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
@@ -21,7 +31,13 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   },
   resetPasswordToken: String,
-  resetPasswordExpire: Date
+  resetPasswordExpire: Date,
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: String,
+  verificationTokenExpire: Date
 });
 
 import crypto from 'crypto';
@@ -73,6 +89,23 @@ userSchema.methods.getResetPasswordToken = function () {
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
   return resetToken;
+};
+
+// Generate and hash email verification token
+userSchema.methods.getEmailVerificationToken = function () {
+  // Generate token
+  const verificationToken = crypto.randomBytes(20).toString('hex');
+
+  // Hash token and set to verificationToken field
+  this.verificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+
+  // Set expire (24 hours)
+  this.verificationTokenExpire = Date.now() + 24 * 60 * 60 * 1000;
+
+  return verificationToken;
 };
 
 const User = mongoose.model('User', userSchema);

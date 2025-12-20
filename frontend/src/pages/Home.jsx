@@ -85,39 +85,49 @@ const Home = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
               icon: CalendarDaysIcon,
               title: 'Plan your habits',
-              desc: 'Create habits with clear timeframes and intent.',
+              desc: 'Create habits with clear timeframes and intent. Focus on what matters.',
+              step: '01'
             },
             {
               icon: CheckBadgeIcon,
               title: 'Show up daily',
-              desc: 'Mark progress visually with a monthly habit grid.',
+              desc: 'Mark progress visually with a sleek monthly grid. Build your flow.',
+              step: '02'
             },
             {
               icon: ArrowTrendingUpIcon,
               title: 'Review momentum',
-              desc: 'Understand patterns through calm analytics.',
+              desc: 'Understand patterns through calm, premium analytics and trends.',
+              step: '03'
             },
           ].map((step) => (
             <div
               key={step.title}
-              className="bg-white p-10 rounded-3xl border border-slate-100 shadow-sm text-center"
+              className="group relative bg-white/60 backdrop-blur-md p-10 rounded-[2.5rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(13,148,136,0.12)] transition-all duration-500 hover:-translate-y-2 overflow-hidden"
             >
-              <div className="w-12 h-12 mx-auto rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6">
-                <step.icon className="w-6 h-6" />
+              {/* Decorative Step Indicator */}
+              <div className="absolute top-6 right-8 text-5xl font-black text-emerald-500/10 group-hover:text-emerald-500/20 transition-colors duration-500 select-none">
+                {step.step}
               </div>
 
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                {step.title}
-              </h3>
+              <div className="relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-8 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                  <step.icon className="w-7 h-7" />
+                </div>
 
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {step.desc}
-              </p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">
+                  {step.title}
+                </h3>
+
+                <p className="text-slate-600 leading-relaxed text-[15px]">
+                  {step.desc}
+                </p>
+              </div>
             </div>
           ))}
         </div>

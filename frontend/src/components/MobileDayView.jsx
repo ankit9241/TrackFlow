@@ -1,4 +1,5 @@
 import { format, addDays, subDays, isToday } from "date-fns";
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import HabitItem from "./HabitItem";
 
 const MobileDayView = ({
@@ -13,7 +14,7 @@ const MobileDayView = ({
 
   return (
     <div className="md:hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-      
+
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <button
@@ -73,6 +74,25 @@ const MobileDayView = ({
               isMobile={true}
             />
           ))}
+
+        {habits.filter(habit => {
+          const hStart = habit.startDate ? new Date(habit.startDate) : null;
+          const hEnd = habit.endDate ? new Date(habit.endDate) : null;
+          const compareDay = new Date(date);
+          compareDay.setHours(0, 0, 0, 0);
+
+          const isActive =
+            (!hStart || compareDay >= new Date(hStart).setHours(0, 0, 0, 0)) &&
+            (!hEnd || compareDay <= new Date(hEnd).setHours(0, 0, 0, 0));
+
+          return isActive;
+        }).length === 0 && (
+            <div className="text-center py-12">
+              <PlusCircleIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <p className="text-slate-600 font-medium mb-1">No habits yet</p>
+              <p className="text-sm text-slate-400">Get started by creating your first habit!</p>
+            </div>
+          )}
       </div>
 
     </div>

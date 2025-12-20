@@ -44,17 +44,17 @@ export function AuthProvider({ children }) {
       navigate('/dashboard');
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed'
       };
     }
   };
 
   // Register function
-  const register = async (email, password) => {
+  const register = async (name, email, password) => {
     try {
-      const response = await api.post('/auth/register', { email, password });
+      const response = await api.post('/auth/register', { name, email, password });
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setCurrentUser(user);

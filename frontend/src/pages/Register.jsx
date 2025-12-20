@@ -6,9 +6,11 @@ import {
   EnvelopeIcon,
   LockClosedIcon,
   ShieldCheckIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 
 const Register = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,8 +36,8 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await register(email, password);
-      toast.success('Account created');
+      await register(name, email, password);
+      toast.success('Account created! Please check your email and verify your account.');
       navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create account');
@@ -65,6 +67,24 @@ const Register = () => {
           <div className="px-8 py-8">
             <form onSubmit={handleSubmit} className="space-y-6">
 
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your Name"
+                    className="w-full pl-10 pr-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
               {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-2">
@@ -77,7 +97,7 @@ const Register = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="Your Email"
                     className="w-full pl-10 pr-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                   />
                 </div>

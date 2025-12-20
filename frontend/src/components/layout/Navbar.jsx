@@ -11,7 +11,8 @@ import {
   FiInfo,
   FiMail,
   FiStar,
-  FiMenu
+  FiMenu,
+  FiChevronDown
 } from 'react-icons/fi';
 import Logo from '../../assets/trackflow-logo.png';
 
@@ -86,7 +87,7 @@ const Navbar = () => {
                   '/contact'
                 )}`}
               >
-                Contact
+                Contact Us
               </Link>
             </div>
           </div>
@@ -116,8 +117,12 @@ const Navbar = () => {
             {/* Mobile menu button */}
             <div className="md:hidden">
               <Menu as="div" className="relative">
-                <Menu.Button className="p-2 rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none">
-                  <FiMenu className="w-6 h-6" />
+                <Menu.Button className="group p-2 rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none transition-all duration-200">
+                  <div className="flex flex-col gap-1.5 w-6 items-end">
+                    <span className="h-0.5 w-full bg-slate-600 rounded-full group-hover:bg-emerald-600 transition-colors"></span>
+                    <span className="h-0.5 w-full bg-slate-600 rounded-full group-hover:bg-emerald-600 transition-colors"></span>
+                    <span className="h-0.5 w-3 bg-slate-600 rounded-full group-hover:bg-emerald-600 transition-colors"></span>
+                  </div>
                 </Menu.Button>
                 <Transition
                   as={Fragment}
@@ -129,6 +134,16 @@ const Navbar = () => {
                   leaveTo="opacity-0 scale-95"
                 >
                   <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-2 z-50">
+                    {currentUser && (
+                      <div className="px-3 py-2 border-b border-slate-100 mb-2">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {currentUser?.name || 'User'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {currentUser?.email}
+                        </p>
+                      </div>
+                    )}
                     <div className="py-1 space-y-1">
                       {currentUser ? (
                         <>
@@ -227,8 +242,10 @@ const Navbar = () => {
             </div>
             {currentUser && (
               <Menu as="div" className="relative">
-                <Menu.Button className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <FiUser className="w-5 h-5" />
+                <Menu.Button className="flex items-center gap-2 px-3 py-1.5 sm:px-3 sm:py-1.5 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <FiUser className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline text-sm font-medium">{currentUser?.name?.split(' ')[0] || 'User'}</span>
+                  <FiChevronDown className="hidden sm:inline w-3.5 h-3.5" />
                 </Menu.Button>
 
                 <Transition
@@ -241,6 +258,14 @@ const Navbar = () => {
                   leaveTo="opacity-0 scale-95"
                 >
                   <Menu.Items className="absolute right-0 mt-3 w-52 origin-top-right rounded-2xl bg-white border border-slate-200 shadow-xl focus:outline-none overflow-hidden">
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {currentUser?.name || 'User'}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {currentUser?.email}
+                      </p>
+                    </div>
                     <Menu.Item>
                       {({ active }) => (
                         <button

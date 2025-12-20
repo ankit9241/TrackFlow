@@ -6,7 +6,16 @@ import {
   TrashIcon
 } from '@heroicons/react/20/solid';
 
-const HabitGrid = ({ habits, currentDate, onToggleHabit, isHabitCompleted, onEditHabit, onDeleteHabit }) => {
+const HabitGrid = ({
+  habits,
+  currentDate,
+  onToggleHabit,
+  isHabitCompleted,
+  onEditHabit,
+  onDeleteHabit,
+  onPrevMonth,
+  onNextMonth
+}) => {
   const startDate = startOfMonth(currentDate);
   const endDate = endOfMonth(currentDate);
   const today = new Date();
@@ -29,9 +38,29 @@ const HabitGrid = ({ habits, currentDate, onToggleHabit, isHabitCompleted, onEdi
           <thead>
             <tr className="bg-slate-50/60">
               <th className="sticky left-0 z-30 bg-white/95 backdrop-blur-sm p-4 text-left border-b border-slate-100 min-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                <span className="text-xl font-bold text-slate-900">
-                  {format(currentDate, 'MMMM yyyy')}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xl font-bold text-slate-900">
+                    {format(currentDate, 'MMMM yyyy')}
+                  </span>
+                  <div className="hidden md:flex items-center gap-1">
+                    <button
+                      onClick={onPrevMonth}
+                      className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-500"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={onNextMonth}
+                      className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-500"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </th>
               <th
                 colSpan={daysInMonth.length}
@@ -49,9 +78,8 @@ const HabitGrid = ({ habits, currentDate, onToggleHabit, isHabitCompleted, onEdi
                 <th
                   key={weekNum}
                   colSpan={weeks[weekNum].length}
-                  className={`p-1 border-b border-slate-100 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/40 ${
-                    index !== weekKeys.length - 1 ? 'border-r border-slate-100' : ''
-                  }`}
+                  className={`p-1 border-b border-slate-100 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/40 ${index !== weekKeys.length - 1 ? 'border-r border-slate-100' : ''
+                    }`}
                 >
                   Week {index + 1}
                 </th>
@@ -67,24 +95,21 @@ const HabitGrid = ({ habits, currentDate, onToggleHabit, isHabitCompleted, onEdi
                 return (
                   <th
                     key={day.toString()}
-                    className={`p-2 border-b border-slate-100 text-center min-w-[40px] ${
-                      isToday ? 'bg-emerald-50/50' : 'bg-white'
-                    }`}
+                    className={`p-2 border-b border-slate-100 text-center min-w-[40px] ${isToday ? 'bg-emerald-50/50' : 'bg-white'
+                      }`}
                   >
                     <div className="flex flex-col items-center gap-0.5">
                       <span
-                        className={`text-[10px] font-medium uppercase tracking-wide ${
-                          isToday ? 'text-emerald-600' : 'text-slate-400'
-                        }`}
+                        className={`text-[10px] font-medium uppercase tracking-wide ${isToday ? 'text-emerald-600' : 'text-slate-400'
+                          }`}
                       >
                         {format(day, 'EEE')}
                       </span>
                       <span
-                        className={`h-6 w-6 flex items-center justify-center rounded-full text-xs font-bold ${
-                          isToday
+                        className={`h-6 w-6 flex items-center justify-center rounded-full text-xs font-bold ${isToday
                             ? 'bg-emerald-600 text-white shadow-sm'
                             : 'text-slate-700'
-                        }`}
+                          }`}
                       >
                         {format(day, 'd')}
                       </span>
@@ -167,18 +192,16 @@ const HabitGrid = ({ habits, currentDate, onToggleHabit, isHabitCompleted, onEdi
                   return (
                     <td
                       key={day.toString()}
-                      className={`p-1.5 border-b border-slate-50 text-center cursor-pointer ${
-                        isToday ? 'bg-emerald-50/30' : ''
-                      }`}
+                      className={`p-1.5 border-b border-slate-50 text-center cursor-pointer ${isToday ? 'bg-emerald-50/30' : ''
+                        }`}
                       onClick={() => onToggleHabit(habit._id, day)}
                     >
                       <div className="flex items-center justify-center">
                         <div
-                          className={`w-6 h-6 rounded-md flex items-center justify-center transition-all shadow-sm ${
-                            isCompleted
+                          className={`w-6 h-6 rounded-md flex items-center justify-center transition-all shadow-sm ${isCompleted
                               ? 'bg-emerald-500 text-white shadow-emerald-100'
                               : 'bg-white border border-slate-200 hover:border-emerald-300 hover:bg-slate-50 scale-90 hover:scale-100'
-                          }`}
+                            }`}
                         >
                           {isCompleted && (
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

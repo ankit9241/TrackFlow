@@ -41,7 +41,7 @@ const createHabit = async (req, res) => {
       isActive: true,
       lastCompleted: null,
       startDate: req.body.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      endDate: req.body.endDate || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59)
+      endDate: req.body.endDate || null
     });
 
     const createdHabit = await habit.save();

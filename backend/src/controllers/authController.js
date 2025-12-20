@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
+import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../utils/email.js';
 
 // @desc    Forgot password
 // @route   POST /api/auth/forgotpassword
@@ -17,24 +18,15 @@ const forgotPassword = async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
-  // Create reset url
-  const resetUrl = `${req.protocol}://${req.get('host')}/resetpassword/${resetToken}`;
-
-  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
-
   try {
-    // In a real app, you would send an email here.
-    // For now, we'll just log it and return it in the response (for development)
-    console.log('RESET PASSWORD LOG:', message);
+    await sendPasswordResetEmail(user.email, resetToken);
 
     res.status(200).json({
       success: true,
-      data: 'Email sent',
-      // Only returning this for ease of development as requested/implied
-      resetUrl: resetUrl
+      message: 'Password reset email sent'
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error sending password reset email:', err);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -99,12 +91,24 @@ const registerUser = async (req, res, next) => {
     // Create new user
     user = new User({
       email,
+      name: req.body.name, // Accept name from body
       password
     });
+
+    // Generate verification token
+    const verificationToken = user.getEmailVerificationToken();
 
     console.log('About to save user');
     await user.save();
     console.log('User saved successfully');
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, verificationToken);
+      console.log('Verification email sent');
+    } catch (emailError) {
+      console.error('Error sending verification email:', emailError);
+    }
 
     // Generate token
     const token = generateToken(user._id);
@@ -115,6 +119,8 @@ const registerUser = async (req, res, next) => {
       user: {
         _id: user._id,
         email: user.email,
+        name: user.name,
+        bio: user.bio,
         createdAt: user.createdAt
       }
     });
@@ -146,6 +152,8 @@ const loginUser = async (req, res) => {
         user: {
           _id: user._id,
           email: user.email,
+          name: user.name,
+          bio: user.bio,
           createdAt: user.createdAt
         }
       });
@@ -171,6 +179,170 @@ const getMe = async (req, res) => {
   }
 };
 
+// @desc    Verify email
+// @route   GET /api/auth/verifyemail/:verificationtoken
+// @access  Public
+const verifyEmail = async (req, res, next) => {
+  // Get hashed token
+  const verificationToken = crypto
+    .createHash('sha256')
+    .update(req.params.verificationtoken)
+    .digest('hex');
+
+  const user = await User.findOne({
+    verificationToken,
+    verificationTokenExpire: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid token or token expired' });
+  }
+
+  // Set as verified
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpire = undefined;
+
+  await user.save();
+
+  // Send welcome/access granted email after verification
+  try {
+    await sendWelcomeEmail(user.email);
+  } catch (emailError) {
+    console.error('Error sending welcome email:', emailError);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Email verified successfully'
+  });
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resendverification
+// @access  Public
+const resendVerification = async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  if (user.isVerified) {
+    return res.status(400).json({ message: 'Email already verified' });
+  }
+
+  const verificationToken = user.getEmailVerificationToken();
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await sendVerificationEmail(user.email, verificationToken);
+    res.status(200).json({ success: true, message: 'Verification email resent' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Email could not be sent' });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+  try {
+    const { name, bio } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name) user.name = name;
+    if (bio !== undefined) user.bio = bio;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        bio: user.bio,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Update user password
+// @route   PUT /api/auth/update-password
+// @access  Private
+const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please provide both current and new password' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Delete user account
+// @route   DELETE /api/auth/account
+// @access  Private
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Import models dynamically to avoid circular dependencies
+    const Habit = (await import('../models/Habit.js')).default;
+    const HabitEntry = (await import('../models/HabitEntry.js')).default;
+
+    // Delete all user's habits
+    await Habit.deleteMany({ userId });
+
+    // Delete all user's habit entries
+    await HabitEntry.deleteMany({ user: userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      success: true,
+      message: 'Account and all associated data deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Failed to delete account' });
+  }
+};
+
 // Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -183,5 +355,10 @@ export {
   loginUser,
   getMe,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyEmail,
+  resendVerification,
+  updateProfile,
+  updatePassword,
+  deleteAccount
 };

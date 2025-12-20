@@ -14,6 +14,7 @@ import Features from './pages/Features';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
+import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AboutMe from './pages/AboutMe';
@@ -55,9 +56,10 @@ function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
               <Route path="/about" element={<AboutMe />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
+              {/* <Route path="/reset-password/:token" element={<ResetPassword />} /> */}
 
               {/* Public routes - only accessible when not logged in */}
               <Route path="/login" element={

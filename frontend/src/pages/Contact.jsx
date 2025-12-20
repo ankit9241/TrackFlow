@@ -6,6 +6,7 @@ import {
   PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import api from '../api/api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -14,11 +15,20 @@ const Contact = () => {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    toast.success("Message sent! We'll get back to you soon.");
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setIsSubmitting(true);
+    try {
+      await api.post('/contact', formData);
+      toast.success("Message sent! We'll get back to you soon.");
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -34,7 +44,7 @@ const Contact = () => {
               </h1>
 
               <p className="text-lg text-slate-600 mb-12 leading-relaxed">
-                Have questions or want to discuss a project? We'd love to hear from you. 
+                Have questions or want to discuss a project? We'd love to hear from you.
                 Reach out and We will get back to you within 24 hours.
               </p>
 
@@ -156,10 +166,11 @@ const Contact = () => {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg hover:shadow-emerald-100 transition-all hover:-translate-y-0.5"
+                    disabled={isSubmitting}
+                    className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg hover:shadow-emerald-100 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <PaperAirplaneIcon className="w-5 h-5" />
-                    Send Message
+                    <PaperAirplaneIcon className={`w-5 h-5 ${isSubmitting ? 'animate-pulse' : ''}`} />
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </button>
                   <p className="mt-3 text-xs text-slate-500 text-center">
                     We'll respond to your message within 24 hours

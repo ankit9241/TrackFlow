@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import {
+  EnvelopeIcon,
+  LockClosedIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -13,140 +18,146 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     try {
       await register(email, password);
-      toast.success('Account created successfully! Redirecting to dashboard...');
-      navigate('/dashboard'); // Add this line to navigate to dashboard after successful registration
+      toast.success('Account created');
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to create account. Please try again.';
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create a new account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              to="/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              sign in to your existing account
-            </Link>
-          </p>
+    <div className="min-h-screen bg-teal-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-lg">
+
+        {/* Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+
+          {/* Context Header */}
+          <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+            <h1 className="text-2xl font-bold text-slate-900 mb-1 text-center">
+              Join Track<span className="text-emerald-600">Flow</span>
+            </h1>
+            <p className="text-sm text-slate-600 text-center">
+              Start building consistent habits today.
+            </p>
+          </div>
+
+          {/* Form Area */}
+          <div className="px-8 py-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-2">
+                  Email address
+                </label>
+                <div className="relative">
+                  <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full pl-10 pr-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    className="w-full pl-10 pr-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-2">
+                  Confirm password
+                </label>
+                <div className="relative">
+                  <ShieldCheckIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="w-full pl-10 pr-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="flex items-start gap-2">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="terms" className="text-xs text-slate-600 leading-relaxed">
+                  I agree to the{' '}
+                  <Link to="/terms" className="font-medium text-slate-900">
+                    Terms
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="font-medium text-slate-900">
+                    Privacy Policy
+                  </Link>.
+                </label>
+              </div>
+
+              {/* Action */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50"
+              >
+                {isLoading ? 'Creating account…' : 'Create account'}
+              </button>
+            </form>
+          </div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password (min 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className="flex items-center\">
-            <input
-              id="terms"
-              name="terms"
-              type="checkbox"
-              required
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-            />
-            <label
-              htmlFor="terms"
-              className="ml-2 block text-sm text-gray-900"
-            >
-              I agree to the{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
-                Privacy Policy
-              </a>
-            </label>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
-                isLoading ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {isLoading ? 'Creating account...' : 'Create Account'}
-            </button>
-          </div>
-        </form>
+        {/* Footer */}
+        <p className="mt-8 text-center text-sm text-slate-600">
+          Already have an account?{' '}
+          <Link to="/login" className="font-semibold text-slate-900">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -4,11 +4,11 @@ const habitSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User ID is required']
+    required: true
   },
   name: {
     type: String,
-    required: [true, 'Habit name is required'],
+    required: true,
     trim: true,
     maxlength: [50, 'Habit name cannot be more than 50 characters']
   },
@@ -80,7 +80,13 @@ const habitSchema = new mongoose.Schema({
     type: String,
     trim: true,
     lowercase: true
-  }]
+  }],
+  startDate: {
+    type: Date
+  },
+  endDate: {
+    type: Date
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -89,43 +95,127 @@ const habitSchema = new mongoose.Schema({
 
 // Virtual for total completions
 habitSchema.virtual('totalCompletions', {
-  ref: 'HabitCompletion',
+  ref: 'HabitEntry',
   localField: '_id',
-  foreignField: 'habitId',
+  foreignField: 'habit',
   count: true
 });
 
 // Virtual for successful completions
 habitSchema.virtual('successfulCompletions', {
-  ref: 'HabitCompletion',
+  ref: 'HabitEntry',
   localField: '_id',
-  foreignField: 'habitId',
+  foreignField: 'habit',
   match: { completed: true },
   count: true
 });
 
 // Update completion rate before saving
-habitSchema.pre('save', function(next) {
-  if (this.isModified('totalCompletions') || this.isModified('successfulCompletions')) {
-    this.completionRate = this.totalCompletions > 0 
-      ? Math.round((this.successfulCompletions / this.totalCompletions) * 100) 
-      : 0;
+habitSchema.pre('save', async function () {
+  try {
+    // Only calculate if we're modifying relevant fields
+    if (this.isModified('totalCompletions') || this.isModified('successfulCompletions')) {
+      const total = typeof this.totalCompletions === 'number' ? this.totalCompletions : 0;
+      const successful = typeof this.successfulCompletions === 'number' ? this.successfulCompletions : 0;
+
+      // Only calculate if we have valid numbers
+      if (!isNaN(total) && !isNaN(successful) && total > 0) {
+        this.completionRate = Math.round((successful / total) * 100);
+      } else {
+        this.completionRate = 0;
+      }
+    }
+  } catch (error) {
+    console.error('Error in pre-save hook:', error);
+    this.completionRate = 0;
   }
-  next();
 });
 
-// Update streaks when a completion is added
-habitSchema.methods.updateStreak = async function(completed) {
-  if (completed) {
-    this.currentStreak += 1;
+// Update streaks when a completion is toggled
+// Update streaks when a completion is toggled
+habitSchema.methods.updateStreak = async function (completed) {
+  try {
+    // Get all completed entries, sorted by date DESCENDING (newest first)
+    const completedEntries = await this.model('HabitEntry')
+      .find({
+        habit: this._id,
+        completed: true
+      })
+      .sort({ date: -1 }) // Sort by date descending
+      .select('date')
+      .lean();
+
+    let currentStreak = 0;
+
+    // Calculate Today and Yesterday (normalized to midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (completedEntries.length > 0) {
+      // 1. Check if the most recent completion is active (Today or Yesterday)
+      const lastEntryDate = new Date(completedEntries[0].date);
+      lastEntryDate.setHours(0, 0, 0, 0);
+
+      // If the last completion is older than yesterday, the Current Streak is 0.
+      if (lastEntryDate.getTime() >= yesterday.getTime()) {
+        currentStreak = 1;
+
+        let previousDate = lastEntryDate;
+
+        // 2. Count backwards looking for consecutive days
+        for (let i = 1; i < completedEntries.length; i++) {
+          const entryDate = new Date(completedEntries[i].date);
+          entryDate.setHours(0, 0, 0, 0);
+
+          // Calculate difference in days
+          const diffTime = previousDate.getTime() - entryDate.getTime();
+          const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+          if (diffDays === 1) {
+            // It's the previous day -> Continue Streak
+            currentStreak++;
+            previousDate = entryDate;
+          } else if (diffDays === 0) {
+            // Same day entry (duplicate or multiple completions) -> Ignore logic, continue loop
+            continue;
+          } else {
+            // Gap found -> Streak Broken
+            break;
+          }
+        }
+      }
+
+      this.lastCompleted = completedEntries[0].date;
+    } else {
+      this.lastCompleted = null;
+    }
+
+    // Update the streak
+    this.currentStreak = currentStreak;
+
+    // Update best streak if needed
     if (this.currentStreak > this.bestStreak) {
       this.bestStreak = this.currentStreak;
     }
-    this.lastCompleted = new Date();
-  } else {
-    this.currentStreak = 0;
+
+    // Update completion stats
+    this.totalCompletions = await this.model('HabitEntry').countDocuments({
+      habit: this._id
+    });
+
+    this.successfulCompletions = await this.model('HabitEntry').countDocuments({
+      habit: this._id,
+      completed: true
+    });
+
+    await this.save();
+    return this;
+  } catch (error) {
+    console.error('Error updating streak:', error);
+    throw error;
   }
-  await this.save();
 };
 
 // Create a compound index to ensure unique habit names per user

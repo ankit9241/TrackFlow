@@ -15,14 +15,9 @@ const Footer = () => {
             <Link to="/terms" className="text-gray-500 hover:text-gray-700 text-sm">
               Terms of Service
             </Link>
-            <a 
-              href="https://github.com/yourusername/habit-tracker" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-gray-500 hover:text-gray-700 text-sm"
-            >
-              GitHub
-            </a>
+            <Link to="/contact" className="text-gray-500 hover:text-gray-700 text-sm">
+              Contact Us
+            </Link>
           </div>
         </div>
       </div>

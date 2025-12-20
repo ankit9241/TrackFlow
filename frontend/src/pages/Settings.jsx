@@ -2,51 +2,49 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import {
+  UserIcon,
+  LockClosedIcon,
+  TrashIcon,
+  EnvelopeIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 
 const Settings = () => {
   const { currentUser, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('account');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
-      setFormData(prev => ({
-        ...prev,
-        email: currentUser.email || ''
-      }));
+      setFormData((p) => ({ ...p, email: currentUser.email || '' }));
     }
   }, [currentUser]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const handleChange = (e) =>
+    setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleEmailUpdate = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.currentPassword) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please fill all required fields');
       return;
     }
-
     try {
       setIsLoading(true);
       await axios.put('/auth/update-email', {
         email: formData.email,
-        password: formData.currentPassword
+        password: formData.currentPassword,
       });
-      toast.success('Email updated successfully');
-    } catch (error) {
-      console.error('Error updating email:', error);
-      toast.error(error.response?.data?.message || 'Failed to update email');
+      toast.success('Email updated');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update email');
     } finally {
       setIsLoading(false);
     }
@@ -54,217 +52,200 @@ const Settings = () => {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (!formData.newPassword || !formData.confirmPassword || !formData.currentPassword) {
-      toast.error('Please fill in all required fields');
+    if (
+      !formData.currentPassword ||
+      !formData.newPassword ||
+      !formData.confirmPassword
+    ) {
+      toast.error('Please fill all fields');
       return;
     }
-
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
-
     try {
       setIsLoading(true);
       await axios.put('/auth/update-password', {
         currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword
+        newPassword: formData.newPassword,
       });
-      toast.success('Password updated successfully');
-      setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '', currentPassword: '' }));
-    } catch (error) {
-      console.error('Error updating password:', error);
-      toast.error(error.response?.data?.message || 'Failed to update password');
+      toast.success('Password updated');
+      setFormData((p) => ({
+        ...p,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update password');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      try {
-        setIsLoading(true);
-        await axios.delete('/auth/account');
-        toast.success('Account deleted successfully');
-        logout();
-      } catch (error) {
-        console.error('Error deleting account:', error);
-        toast.error('Failed to delete account');
-      } finally {
-        setIsLoading(false);
-      }
+    if (!window.confirm('This will permanently delete your account. Continue?')) return;
+    try {
+      setIsLoading(true);
+      await axios.delete('/auth/account');
+      toast.success('Account deleted');
+      logout();
+    } catch {
+      toast.error('Failed to delete account');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const tabs = [
+    { id: 'account', name: 'Account', icon: UserIcon },
+    { id: 'security', name: 'Security', icon: LockClosedIcon },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div className="space-y-8 divide-y divide-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your account settings and preferences
+    <div className="min-h-screen bg-teal-50 py-20 px-4">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
+        <div className="mb-12">
+          <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
+          <p className="text-sm text-slate-600">
+            Manage your account and security preferences.
           </p>
         </div>
 
-        {/* Update Email */}
-        <div className="pt-8">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Email Address</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Update your email address
-              </p>
-            </div>
-            <div className="mt-5 md:col-span-2 md:mt-0">
-              <form onSubmit={handleEmailUpdate}>
-                <div className="shadow sm:rounded-md sm:overflow-hidden">
-                  <div className="space-y-6 bg-white px-4 py-5 sm:p-6">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                        Email address
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="current-password-email" className="block text-sm font-medium text-gray-700">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        name="currentPassword"
-                        id="current-password-email"
-                        value={formData.currentPassword}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                        placeholder="Enter your current password"
-                      />
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-                    >
-                      {isLoading ? 'Updating...' : 'Update Email'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-10">
 
-        {/* Update Password */}
-        <div className="pt-8">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Change Password</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Update your password
-              </p>
-            </div>
-            <div className="mt-5 md:col-span-2 md:mt-0">
-              <form onSubmit={handlePasswordUpdate}>
-                <div className="shadow sm:rounded-md sm:overflow-hidden">
-                  <div className="space-y-6 bg-white px-4 py-5 sm:p-6">
-                    <div>
-                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        name="currentPassword"
-                        id="current-password"
-                        value={formData.currentPassword}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                        placeholder="Enter your current password"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
-                        New Password
-                      </label>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        id="new-password"
-                        value={formData.newPassword}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                        placeholder="Enter new password"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                        Confirm New Password
-                      </label>
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        id="confirm-password"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                        placeholder="Confirm new password"
-                      />
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-                    >
-                      {isLoading ? 'Updating...' : 'Update Password'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+          {/* Sidebar */}
+          <aside className="lg:w-64">
+            <nav className="space-y-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium ${
+                    activeTab === tab.id
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
 
-        {/* Delete Account */}
-        <div className="pt-8">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Delete Account</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Permanently delete your account
-              </p>
+            <div className="mt-10 pt-6 border-t border-slate-200">
+              <button
+                onClick={handleDeleteAccount}
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete account
+              </button>
             </div>
-            <div className="mt-5 md:col-span-2 md:mt-0">
-              <div className="bg-white shadow sm:rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900">Delete your account</h3>
-                  <div className="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>
-                      Once you delete your account, you will lose all your data including your habits and tracking history. This action cannot be undone.
+          </aside>
+
+          {/* Content */}
+          <main className="flex-1">
+
+            {activeTab === 'account' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-8">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <EnvelopeIcon className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      Email address
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Used for login and notifications
                     </p>
                   </div>
-                  <div className="mt-5">
-                    <button
-                      type="button"
-                      onClick={handleDeleteAccount}
-                      disabled={isLoading}
-                      className="inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
-                    >
-                      {isLoading ? 'Deleting...' : 'Delete Account'}
-                    </button>
+                </div>
+
+                <form onSubmit={handleEmailUpdate} className="space-y-6">
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    placeholder="Current password"
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl"
+                  >
+                    Update email
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-8">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <ShieldCheckIcon className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      Change password
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Keep your account secure
+                    </p>
                   </div>
                 </div>
+
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    placeholder="Current password"
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                  <input
+                    type="password"
+                    name="newPassword"
+                    placeholder="New password"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm new password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-teal-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl"
+                  >
+                    Update password
+                  </button>
+                </form>
               </div>
-            </div>
-          </div>
+            )}
+
+          </main>
         </div>
       </div>
     </div>

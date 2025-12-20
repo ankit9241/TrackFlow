@@ -12,25 +12,27 @@ const MobileDayView = ({
 }) => {
 
   return (
-    <div className="md:hidden bg-white rounded-2xl shadow-sm border p-4">
+    <div className="md:hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+      
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <button
           onClick={() => onChangeDate(subDays(date, 1))}
-          className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center"
+          className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-colors"
         >
           ‹
         </button>
 
         <div className="text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs font-medium text-slate-500">
             {format(date, "EEEE")}
           </p>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-slate-900 leading-tight">
             {format(date, "d MMM yyyy")}
           </h2>
+
           {isToday(date) && (
-            <span className="text-xs text-indigo-600 font-medium">
+            <span className="inline-block mt-0.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
               Today
             </span>
           )}
@@ -38,7 +40,7 @@ const MobileDayView = ({
 
         <button
           onClick={() => onChangeDate(addDays(date, 1))}
-          className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center"
+          className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-colors"
         >
           ›
         </button>
@@ -46,18 +48,31 @@ const MobileDayView = ({
 
       {/* Habits */}
       <div className="space-y-2">
-        {habits.map((habit) => (
-          <HabitItem
-            key={habit._id}
-            habit={habit}
-            date={date}
-            completed={isHabitCompleted(habit._id, date)}
-            onToggleHabit={onToggleHabit}
-            onEditHabit={onEditHabit}
-            onDeleteHabit={onDeleteHabit}
-            isMobile={true}
-          />
-        ))}
+        {habits
+          .filter(habit => {
+            const hStart = habit.startDate ? new Date(habit.startDate) : null;
+            const hEnd = habit.endDate ? new Date(habit.endDate) : null;
+            const compareDay = new Date(date);
+            compareDay.setHours(0, 0, 0, 0);
+
+            const isActive =
+              (!hStart || compareDay >= new Date(hStart).setHours(0, 0, 0, 0)) &&
+              (!hEnd || compareDay <= new Date(hEnd).setHours(0, 0, 0, 0));
+
+            return isActive;
+          })
+          .map((habit) => (
+            <HabitItem
+              key={habit._id}
+              habit={habit}
+              date={date}
+              completed={isHabitCompleted(habit._id, date)}
+              onToggleHabit={onToggleHabit}
+              onEditHabit={onEditHabit}
+              onDeleteHabit={onDeleteHabit}
+              isMobile={true}
+            />
+          ))}
       </div>
 
     </div>

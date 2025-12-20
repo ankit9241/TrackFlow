@@ -1,5 +1,4 @@
-// At the top of Dashboard.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   format,
   isSameDay,
@@ -7,238 +6,206 @@ import {
   startOfMonth,
   endOfMonth,
 } from "date-fns";
-import {
-  PlusIcon,
-  CheckCircleIcon,
-  TrophyIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
-import { motion, AnimatePresence } from "framer-motion";
 import { toggleHabitCompletion, getHabitCompletions } from "../api/api";
-import StatsCard from "../components/dashboard/StatsCard";
-import HabitProgress from "../components/HabitProgress";
-import WeeklySummary from "../components/WeeklySummary";
-import DonutChart from "../components/DonutChart";
-import CalendarView from "../components/CalendarView";
+
+import HabitGrid from "../components/HabitGrid";
 import MobileDayView from "../components/MobileDayView";
+import { calculatePremiumStats } from "../utils/analyticsHelper";
+import OverviewCards from "../components/analytics/OverviewCards";
+import AnalyticsTrends from "../components/analytics/AnalyticsTrends";
+import AnalyticsHabits from "../components/analytics/AnalyticsHabits";
+import AnalyticsInsights from "../components/analytics/AnalyticsInsights";
+import HabitModal from "../components/modals/HabitModal";
 
 const Dashboard = () => {
   const [habits, setHabits] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newHabitName, setNewHabitName] = useState("");
-  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Fetch habits data
-  useEffect(() => {
-    const fetchHabits = async () => {
+  const stats = calculatePremiumStats(habits);
+
+  const handleHabitSubmit = async (habitData) => {
+    if (editingHabit) {
       try {
-        setIsLoading(true);
-        const [habitsRes, completionsRes] = await Promise.all([
-          api.get("/habits"),
-          getHabitCompletions(
-            startOfMonth(selectedDate),
-            endOfMonth(selectedDate)
-          ),
-        ]);
-        // Map completions to habits
-        const habitsWithCompletions = habitsRes.data.map((habit) => ({
-          ...habit,
-          completions: completionsRes.data
-            .filter((c) => c.habitId === habit._id && c.completed)
-            .map((c) => ({ date: c.date.split("T")[0] })),
-        }));
-        setHabits(habitsWithCompletions);
+        const response = await api.put(`/habits/${editingHabit._id}`, {
+          name: habitData.name,
+          startDate: habitData.startDate,
+          endDate: habitData.endDate,
+        });
+
+        setHabits((prev) =>
+          prev.map((h) =>
+            h._id === editingHabit._id ? { ...h, ...response.data } : h
+          )
+        );
+
+        setIsHabitModalOpen(false);
+        setEditingHabit(null);
+        toast.success("Habit updated successfully");
       } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load habits");
-      } finally {
-        setIsLoading(false);
+        toast.error(error.response?.data?.message || "Failed to update habit");
       }
-    };
-    fetchHabits();
-  }, [selectedDate]);
+    } else {
+      if (!habitData?.name?.trim()) return;
 
-  const handleAddHabit = async (e) => {
-    e.preventDefault();
-    if (!newHabitName.trim()) return;
+      try {
+        const response = await api.post("/habits", {
+          name: habitData.name,
+          description: "",
+          category: "personal",
+          frequency: [{ day: "monday", time: "09:00" }],
+          target: 1,
+          targetUnit: "times",
+          tags: [],
+          startDate: habitData.startDate,
+          endDate: habitData.endDate,
+        });
 
-    try {
-      const response = await api.post("/habits", {
-        name: newHabitName,
-        description: "",
-        category: "personal",
-        frequency: [
-          {
-            day: "monday", // Default day
-            time: "09:00", // Default time
-          },
-        ],
-        target: 1,
-        targetUnit: "times",
-        tags: [],
-      });
-
-      setHabits((prev) => [...prev, { ...response.data, completions: [] }]);
-      setNewHabitName("");
-      setIsAddingHabit(false);
-      toast.success("Habit added successfully");
-    } catch (error) {
-      console.error("Error adding habit:", error);
-      toast.error(error.response?.data?.message || "Failed to add habit");
+        setHabits((prev) => [...prev, { ...response.data, completions: [] }]);
+        setIsHabitModalOpen(false);
+        toast.success("Habit added successfully");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to add habit");
+      }
     }
   };
 
-  const handleEditHabit = async (habitId, newName) => {
-    try {
-      await api.put(`/habits/${habitId}`, { name: newName });
-
-      // Update local state
-      setHabits((prevHabits) =>
-        prevHabits.map((habit) =>
-          habit._id === habitId ? { ...habit, name: newName } : habit
-        )
-      );
-    } catch (error) {
-      console.error("Error updating habit:", error);
-      throw error;
-    }
+  const handleEditHabit = (habit) => {
+    setEditingHabit(habit);
+    setIsHabitModalOpen(true);
   };
 
   const handleDeleteHabit = async (habitId) => {
-    try {
-      await api.delete(`/habits/${habitId}`);
-
-      // Update local state
-      setHabits((prevHabits) =>
-        prevHabits.filter((habit) => habit._id !== habitId)
-      );
-    } catch (error) {
-      console.error("Error deleting habit:", error);
-      throw error;
-    }
+    await api.delete(`/habits/${habitId}`);
+    setHabits((prev) => prev.filter((h) => h._id !== habitId));
   };
 
-  const handleToggleHabit = async (habitId, date) => {
+  const fetchHabitsAndCompletions = useCallback(async () => {
     try {
-      const isCompleted = isHabitCompleted(habitId, date);
-      await toggleHabitCompletion(habitId, date, !isCompleted);
+      setIsLoading(true);
 
-      // Update local state
-      setHabits((prevHabits) =>
-        prevHabits.map((habit) =>
-          habit._id === habitId
-            ? {
-                ...habit,
-                completions: isCompleted
-                  ? (habit.completions || []).filter(
-                      (c) => c.date !== date.toISOString().split("T")[0]
-                    )
-                  : [
-                      ...(habit.completions || []),
-                      { date: date.toISOString().split("T")[0] },
-                    ],
-              }
-            : habit
-        )
+      const [habitsRes, completionsRes] = await Promise.all([
+        api.get("/habits"),
+        getHabitCompletions(
+          startOfMonth(selectedDate),
+          endOfMonth(selectedDate)
+        ),
+      ]);
+
+      const completionsMap = new Map();
+      completionsRes.forEach((c) => {
+        const id = c.habit?._id || c.habit;
+        if (!completionsMap.has(id)) completionsMap.set(id, []);
+        completionsMap.get(id).push(c);
+      });
+
+      setHabits(
+        habitsRes.data.map((h) => ({
+          ...h,
+          completions: completionsMap.get(h._id) || [],
+        }))
       );
-    } catch (error) {
-      console.error("Error toggling habit:", error);
-      toast.error("Failed to update habit completion");
+    } catch {
+      toast.error("Failed to load habits");
+      setHabits([]);
+    } finally {
+      setIsLoading(false);
     }
+  }, [selectedDate]);
+
+  const formatDate = (date) => {
+    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
   const isHabitCompleted = (habitId, date) => {
     const habit = habits.find((h) => h._id === habitId);
-    if (!habit || !habit.completions) return false;
-
-    const dateString = date.toISOString().split("T")[0];
-    return habit.completions.some((c) => c.date === dateString);
+    if (!habit) return false;
+    const dateStr = formatDate(date);
+    return habit.completions?.some(
+      (c) => formatDate(c.date) === dateStr && c.completed
+    );
   };
 
-  const getCompletionPercentage = (habit) => {
-    if (!habit.completions || !habit.completions.length) return 0;
-    const completed = habit.completions.filter((c) => c.completed).length;
-    return Math.round((completed / habit.completions.length) * 100);
-  };
+  const handleToggleHabit = async (habitId, date) => {
+    const dateStr = formatDate(date);
+    const previousHabits = [...habits];
 
-  const calculateAnalytics = () => {
-    const totalHabits = habits.length;
-    const completedHabits = habits.filter((habit) => {
-      return habit.completions?.some(
-        (c) => c.completed && isSameDay(parseISO(c.date), new Date())
+    try {
+      setHabits((prev) =>
+        prev.map((h) =>
+          h._id === habitId
+            ? {
+                ...h,
+                completions: [
+                  ...(h.completions || []),
+                  {
+                    _id: `temp-${Date.now()}`,
+                    habit: habitId,
+                    date: dateStr,
+                    completed: !isHabitCompleted(habitId, dateStr),
+                    isOptimistic: true,
+                  },
+                ],
+              }
+            : h
+        )
       );
-    }).length;
 
-    const totalCompletions = habits.reduce((sum, habit) => {
-      return sum + (habit.completions?.filter((c) => c.completed).length || 0);
-    }, 0);
+      const res = await toggleHabitCompletion(
+        habitId,
+        dateStr,
+        !isHabitCompleted(habitId, dateStr)
+      );
 
-    const averageCompletion =
-      totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
+      const entry = res.data.data?.entry || res.data.entry;
 
-    return {
-      totalHabits,
-      completedHabits,
-      totalCompletions,
-      averageCompletion,
-    };
-  };
-
-  const analytics = calculateAnalytics();
-
-  // Get top performing habits (sorted by completion rate)
-  const getTopHabits = (count = 3) => {
-    return [...habits]
-      .sort((a, b) => (b.completionRate || 0) - (a.completionRate || 0))
-      .slice(0, count);
-  };
-
-  // Get habits that need attention (lowest completion rate)
-  const getHabitsNeedingAttention = (count = 3) => {
-    return [...habits]
-      .sort((a, b) => (a.completionRate || 0) - (b.completionRate || 0))
-      .slice(0, count);
-  };
-
-  // Get streak information for a habit
-  const getStreakInfo = (habit) => {
-    const currentStreak = habit.currentStreak || 0;
-    let streakMessage = "";
-
-    if (currentStreak === 0) {
-      streakMessage = "No active streak";
-    } else if (currentStreak === 1) {
-      streakMessage = "1 day";
-    } else {
-      streakMessage = `${currentStreak} days`;
+      setHabits((prev) =>
+        prev.map((h) =>
+          h._id === habitId
+            ? {
+                ...h,
+                completions: [
+                  ...h.completions.filter(
+                    (c) => formatDate(c.date) !== dateStr || c.isOptimistic
+                  ),
+                  { ...entry, date: formatDate(entry.date) },
+                ],
+              }
+            : h
+        )
+      );
+    } catch (error) {
+      setHabits(previousHabits);
+      toast.error(
+        error.response?.data?.message || "Failed to update habit status"
+      );
     }
-
-    return {
-      currentStreak,
-      message: streakMessage,
-      isHotStreak: currentStreak >= 7,
-      isPerfectMonth: habit.completionRate === 100,
-    };
   };
 
-  // Loading state
+  useEffect(() => {
+    fetchHabitsAndCompletions();
+  }, [fetchHabitsAndCompletions]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-gray-200 rounded w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-32 bg-white rounded-lg shadow"></div>
-              ))}
-            </div>
-            <div className="h-64 bg-white rounded-lg shadow"></div>
-          </div>
+      <div className="min-h-screen bg-gray-50 p-8 animate-pulse">
+        <div className="h-10 w-1/3 bg-gray-200 rounded mb-4" />
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-white rounded" />
+          ))}
         </div>
       </div>
     );
@@ -249,158 +216,61 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Habit Tracker
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Track<span className="text-teal-600">Flow</span></h1>
             <p className="text-sm text-gray-500">
               Track your habits and build better routines
             </p>
           </div>
           <button
-            onClick={() => setIsAddingHabit(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => {
+              setEditingHabit(null);
+              setIsHabitModalOpen(true);
+            }}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-teal-700 hover:bg-teal-800"
           >
-            <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            <PlusIcon className="w-5 h-5 mr-2" />
             Add Habit
           </button>
         </div>
 
-        {/* Stats Overview - Compact on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
-          <StatsCard
-            title="Total"
-            value={analytics.totalHabits}
-            icon={CheckCircleIcon}
-            color="indigo"
-            compact
-          />
-          <StatsCard
-            title="Today"
-            value={`${analytics.completedHabits}/${analytics.totalHabits}`}
-            icon={ChartBarIcon}
-            color="green"
-            compact
-          />
-          <StatsCard
-            title="Completed"
-            value={analytics.totalCompletions}
-            icon={TrophyIcon}
-            color="yellow"
-            compact
-          />
-          <StatsCard
-            title="Rate"
-            value={`${analytics.averageCompletion}%`}
-            icon={ArrowTrendingUpIcon}
-            color="purple"
-            compact
+        <OverviewCards stats={stats} />
+
+        <div className="mb-8 hidden md:block">
+          <HabitGrid
+            habits={habits}
+            currentDate={new Date()}
+            onToggleHabit={handleToggleHabit}
+            isHabitCompleted={isHabitCompleted}
+            onEditHabit={handleEditHabit}
+            onDeleteHabit={handleDeleteHabit}
           />
         </div>
 
-        {/* Mobile Day View - Only visible on mobile */}
-        <div className="md:hidden mb-6">
+        <div className="md:hidden mb-8">
           <MobileDayView
-            date={selectedDate}
             habits={habits}
+            date={selectedDate}
+            onChangeDate={setSelectedDate}
             onToggleHabit={handleToggleHabit}
             onEditHabit={handleEditHabit}
             onDeleteHabit={handleDeleteHabit}
             isHabitCompleted={isHabitCompleted}
-            onChangeDate={setSelectedDate}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Calendar View - Hidden on mobile, visible on md and up */}
-          <div className="hidden md:block lg:col-span-2 bg-white p-6 rounded-lg shadow">
-            <CalendarView
-              habits={habits}
-              onToggleHabit={handleToggleHabit}
-              isHabitCompleted={isHabitCompleted}
-            />
-          </div>
+        <AnalyticsTrends habits={habits} stats={stats} />
+        {/* <AnalyticsHabits rankings={stats.rankings} overview={stats.overview} /> */}
+        <AnalyticsInsights stats={stats} habits={habits} />
 
-          {/* Weekly Summary */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Weekly Summary
-            </h3>
-            <WeeklySummary
-              habits={habits}
-              isHabitCompleted={isHabitCompleted}
-            />
-
-            <h3 className="text-lg font-medium text-gray-900 mt-6 mb-4">
-              Habit Progress
-            </h3>
-            <div className="space-y-4">
-              {habits.map((habit) => (
-                <HabitProgress
-                  key={habit._id}
-                  name={habit.name}
-                  progress={getCompletionPercentage(habit)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Donut Chart */}
-        {habits.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Habit Distribution
-            </h3>
-            <div className="h-64">
-              <DonutChart
-                data={habits.map((habit) => ({
-                  name: habit.name,
-                  value: getCompletionPercentage(habit),
-                  color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                }))}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Add Habit Form */}
-        {isAddingHabit && (
-          <div className="mb-6 p-6 bg-white rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Create New Habit
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={newHabitName}
-                  onChange={(e) => setNewHabitName(e.target.value)}
-                  placeholder="e.g., Drink 8 glasses of water"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  onKeyDown={(e) => e.key === "Enter" && handleAddHabit(e)}
-                  autoFocus
-                />
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleAddHabit}
-                  className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Add Habit
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAddingHabit(false);
-                    setNewHabitName("");
-                  }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <HabitModal
+          isOpen={isHabitModalOpen}
+          onClose={() => {
+            setIsHabitModalOpen(false);
+            setEditingHabit(null);
+          }}
+          onSubmit={handleHabitSubmit}
+          habit={editingHabit}
+        />
       </div>
     </div>
   );

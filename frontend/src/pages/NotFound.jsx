@@ -1,39 +1,51 @@
 import { Link } from 'react-router-dom';
+import { HomeIcon } from '@heroicons/react/24/outline';
+import NotFoundImage from '../assets/notfound.png';
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-primary-600">404</h1>
-        <h2 className="mt-4 text-3xl font-bold text-gray-900">Page not found</h2>
-        <p className="mt-3 text-lg text-gray-600">
-          Sorry, we couldn't find the page you're looking for.
-        </p>
-        <div className="mt-8">
-          <Link
-            to="/"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            Go back home
-          </Link>
+    <div className="min-h-screen bg-[#e3fff1] flex items-center justify-center px-4">
+      <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+
+        {/* Image Section */}
+        <div className="flex justify-center relative overflow-hidden group">
+          <div className="absolute -inset-x-2 rounded-lg"></div>
+          <img
+            src={NotFoundImage}
+            alt="Page not found"
+            className="relative z-10 max-w-md md:max-w-lg w-full object-cover transition-transform duration-300 scale-100 hover:scale-105"
+          />
         </div>
-        <div className="mt-12">
-          <p className="text-sm text-gray-500">
-            Or try these pages:
+
+        {/* Content Section */}
+        <div className="text-center md:text-left">
+          <h1 className="text-6xl font-bold text-slate-900 tracking-tight mb-4">
+            404
+          </h1>
+
+          <h2 className="text-xl font-semibold text-slate-800 mb-3">
+            Page not found
+          </h2>
+
+          <p className="text-slate-600 leading-relaxed mb-8 max-w-md mx-auto md:mx-0">
+            The page you’re looking for doesn’t exist or may have been moved.
+            Let’s get you back on track.
           </p>
-          <div className="mt-4 flex justify-center space-x-4">
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl shadow-sm"
+            >
+              <HomeIcon className="w-4 h-4" />
+              Go to home
+            </Link>
+
             <Link
               to="/dashboard"
-              className="text-sm font-medium text-primary-600 hover:text-primary-500"
+              className="inline-flex items-center justify-center px-6 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl"
             >
               Dashboard
-            </Link>
-            <span className="text-gray-300">•</span>
-            <Link
-              to="/settings"
-              className="text-sm font-medium text-primary-600 hover:text-primary-500"
-            >
-              Settings
             </Link>
           </div>
         </div>

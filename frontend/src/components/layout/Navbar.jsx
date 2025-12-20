@@ -2,7 +2,17 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { FiUser, FiLogOut, FiSettings } from 'react-icons/fi';
+import { 
+  FiUser, 
+  FiLogOut, 
+  FiSettings, 
+  FiLogIn, 
+  FiUserPlus, 
+  FiInfo, 
+  FiMail, 
+  FiStar,
+  FiMenu
+} from 'react-icons/fi';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
@@ -18,74 +28,233 @@ const Navbar = () => {
     }
   };
 
-  // Check if current route is active
-  const isActive = (path) => {
-    return location.pathname === path ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700';
-  };
+  const isActive = (path) =>
+    location.pathname === path
+      ? 'bg-emerald-50 text-emerald-700'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100';
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-xl font-bold text-primary-600">
-                TrackFlow
-              </Link>
-            </div>
-            {currentUser && (
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+    <header className="sticky top-4 z-50 px-4">
+      <nav className="mx-auto max-w-7xl">
+        <div className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full shadow-sm">
+
+          {/* ===== Left Side ===== */}
+          <div className="flex items-center gap-8">
+            {/* Logo */}
+            <Link
+              to="/"
+              className="flex items-center h-12 w-auto"
+            >
+              <img 
+                src="/src/assets/trackflow-logo.png" 
+                alt="TrackFlow Logo" 
+                className="h-full w-auto object-contain"
+              />
+            </Link>
+
+            <div className="hidden md:flex items-center gap-2">
+              {currentUser && (
                 <Link
                   to="/dashboard"
-                  className={`${isActive('/dashboard')} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(
+                    '/dashboard'
+                  )}`}
                 >
                   Dashboard
                 </Link>
-                <Link
-                  to="/habits"
-                  className={`${isActive('/habits')} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  My Habits
-                </Link>
-                <Link
-                  to="/analytics"
-                  className={`${isActive('/analytics')} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  Analytics
-                </Link>
-              </div>
-            )}
+              )}
+              <Link
+                to="/features"
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(
+                  '/features'
+                )}`}
+              >
+                Features
+              </Link>
+              <Link
+                to="/about"
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(
+                  '/about'
+                )}`}
+              >
+                About
+              </Link>
+              <Link
+                to="/contact"
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(
+                  '/contact'
+                )}`}
+              >
+                Contact
+              </Link>
+            </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {currentUser ? (
-              <Menu as="div" className="ml-3 relative">
-                <div>
-                  <Menu.Button className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700">
-                      <FiUser className="h-5 w-5" />
-                    </div>
-                  </Menu.Button>
-                </div>
+
+          {/* ===== Right Side ===== */}
+          <div className="flex items-center gap-3">
+            {/* Public Links */}
+            <div className="hidden sm:flex items-center gap-2">
+              {!currentUser && (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 text-sm font-medium text-slate-700 rounded-full hover:bg-slate-100 transition-all"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-full hover:bg-emerald-700 shadow-sm transition-all"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <Menu as="div" className="relative">
+                <Menu.Button className="p-2 rounded-full text-slate-600 hover:bg-slate-100 focus:outline-none">
+                  <FiMenu className="w-6 h-6" />
+                </Menu.Button>
                 <Transition
                   as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
+                  enter="transition ease-out duration-150"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="transition ease-in duration-100"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
                 >
-                  <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-2 z-50">
+                    <div className="py-1 space-y-1">
+                      {currentUser ? (
+                        <>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                to="/dashboard"
+                                className={`${
+                                  active ? 'bg-slate-100' : ''
+                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                              >
+                                Dashboard
+                              </Link>
+                            )}
+                          </Menu.Item>
+                          <div className="border-t border-slate-100 my-1"></div>
+                        </>
+                      ) : (
+                        <>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                to="/login"
+                                className={`${
+                                  active ? 'bg-slate-100' : ''
+                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FiLogIn className="w-4 h-4" />
+                                  Log In
+                                </div>
+                              </Link>
+                            )}
+                          </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                to="/register"
+                                className={`${
+                                  active ? 'bg-slate-100' : ''
+                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FiUserPlus className="w-4 h-4" />
+                                  Sign Up
+                                </div>
+                              </Link>
+                            )}
+                          </Menu.Item>
+                          <div className="border-t border-slate-100 my-1"></div>
+                        </>
+                      )}
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/features"
+                            className={`${
+                              active ? 'bg-slate-100' : ''
+                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FiStar className="w-4 h-4" />
+                              Features
+                            </div>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/about"
+                            className={`${
+                              active ? 'bg-slate-100' : ''
+                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FiInfo className="w-4 h-4" />
+                              About
+                            </div>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/contact"
+                            className={`${
+                              active ? 'bg-slate-100' : ''
+                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FiMail className="w-4 h-4" />
+                              Contact Us
+                            </div>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+            </div>
+            {currentUser && (
+              <Menu as="div" className="relative">
+                <Menu.Button className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <FiUser className="w-5 h-5" />
+                </Menu.Button>
+
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-150"
+                  enterFrom="opacity-0 scale-95 translate-y-1"
+                  enterTo="opacity-100 scale-100 translate-y-0"
+                  leave="transition ease-in duration-100"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 mt-3 w-52 origin-top-right rounded-2xl bg-white border border-slate-200 shadow-xl focus:outline-none overflow-hidden">
                     <Menu.Item>
                       {({ active }) => (
                         <button
                           onClick={() => navigate('/settings')}
                           className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-4 py-2 text-sm text-gray-700`}
+                            active ? 'bg-slate-100' : ''
+                          } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
                         >
-                          <FiSettings className="mr-3 h-5 w-5 text-gray-400" />
+                          <FiSettings className="w-4 h-4 text-slate-400" />
                           Settings
                         </button>
                       )}
@@ -95,10 +264,10 @@ const Navbar = () => {
                         <button
                           onClick={handleLogout}
                           className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-4 py-2 text-sm text-gray-700`}
+                            active ? 'bg-slate-100' : ''
+                          } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
                         >
-                          <FiLogOut className="mr-3 h-5 w-5 text-gray-400" />
+                          <FiLogOut className="w-4 h-4 text-slate-400" />
                           Sign out
                         </button>
                       )}
@@ -106,26 +275,11 @@ const Navbar = () => {
                   </Menu.Items>
                 </Transition>
               </Menu>
-            ) : (
-              <div className="flex space-x-4">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/register"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-                >
-                  Sign up
-                </Link>
-              </div>
             )}
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 };
 

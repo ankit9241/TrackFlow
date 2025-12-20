@@ -2,7 +2,7 @@ services:
   - type: web
     name: trackflow-backend
     env: node
-    buildCommand: npm install --production
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV

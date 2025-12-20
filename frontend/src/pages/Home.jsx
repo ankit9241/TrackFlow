@@ -8,6 +8,7 @@ import {
   ArrowTrendingUpIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
+import HeroImage from '../assets/hero-image.png';
 
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
@@ -65,7 +66,7 @@ const Home = () => {
             {/* Image */}
             <div className="mt-14 lg:mt-0">
               <img
-                src="/src/assets/hero-image.png"
+                src={HeroImage}
                 alt="TrackFlow dashboard"
                 className="w-full max-w-2xl mx-auto"
               />

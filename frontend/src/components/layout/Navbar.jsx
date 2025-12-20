@@ -2,17 +2,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { 
-  FiUser, 
-  FiLogOut, 
-  FiSettings, 
-  FiLogIn, 
-  FiUserPlus, 
-  FiInfo, 
-  FiMail, 
+import {
+  FiUser,
+  FiLogOut,
+  FiSettings,
+  FiLogIn,
+  FiUserPlus,
+  FiInfo,
+  FiMail,
   FiStar,
   FiMenu
 } from 'react-icons/fi';
+import Logo from '../../assets/trackflow-logo.png';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
@@ -45,9 +46,9 @@ const Navbar = () => {
               to="/"
               className="flex items-center h-12 w-auto"
             >
-              <img 
-                src="/src/assets/trackflow-logo.png" 
-                alt="TrackFlow Logo" 
+              <img
+                src={Logo}
+                alt="TrackFlow Logo"
                 className="h-full w-auto object-contain"
               />
             </Link>
@@ -135,9 +136,8 @@ const Navbar = () => {
                             {({ active }) => (
                               <Link
                                 to="/dashboard"
-                                className={`${
-                                  active ? 'bg-slate-100' : ''
-                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                                className={`${active ? 'bg-slate-100' : ''
+                                  } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                               >
                                 Dashboard
                               </Link>
@@ -151,9 +151,8 @@ const Navbar = () => {
                             {({ active }) => (
                               <Link
                                 to="/login"
-                                className={`${
-                                  active ? 'bg-slate-100' : ''
-                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                                className={`${active ? 'bg-slate-100' : ''
+                                  } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                               >
                                 <div className="flex items-center gap-3">
                                   <FiLogIn className="w-4 h-4" />
@@ -166,9 +165,8 @@ const Navbar = () => {
                             {({ active }) => (
                               <Link
                                 to="/register"
-                                className={`${
-                                  active ? 'bg-slate-100' : ''
-                                } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                                className={`${active ? 'bg-slate-100' : ''
+                                  } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                               >
                                 <div className="flex items-center gap-3">
                                   <FiUserPlus className="w-4 h-4" />
@@ -184,9 +182,8 @@ const Navbar = () => {
                         {({ active }) => (
                           <Link
                             to="/features"
-                            className={`${
-                              active ? 'bg-slate-100' : ''
-                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                            className={`${active ? 'bg-slate-100' : ''
+                              } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                           >
                             <div className="flex items-center gap-3">
                               <FiStar className="w-4 h-4" />
@@ -199,9 +196,8 @@ const Navbar = () => {
                         {({ active }) => (
                           <Link
                             to="/about"
-                            className={`${
-                              active ? 'bg-slate-100' : ''
-                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                            className={`${active ? 'bg-slate-100' : ''
+                              } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                           >
                             <div className="flex items-center gap-3">
                               <FiInfo className="w-4 h-4" />
@@ -214,9 +210,8 @@ const Navbar = () => {
                         {({ active }) => (
                           <Link
                             to="/contact"
-                            className={`${
-                              active ? 'bg-slate-100' : ''
-                            } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
+                            className={`${active ? 'bg-slate-100' : ''
+                              } block px-4 py-2 text-sm text-slate-700 rounded-lg`}
                           >
                             <div className="flex items-center gap-3">
                               <FiMail className="w-4 h-4" />
@@ -250,9 +245,8 @@ const Navbar = () => {
                       {({ active }) => (
                         <button
                           onClick={() => navigate('/settings')}
-                          className={`${
-                            active ? 'bg-slate-100' : ''
-                          } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
+                          className={`${active ? 'bg-slate-100' : ''
+                            } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
                         >
                           <FiSettings className="w-4 h-4 text-slate-400" />
                           Settings
@@ -263,9 +257,8 @@ const Navbar = () => {
                       {({ active }) => (
                         <button
                           onClick={handleLogout}
-                          className={`${
-                            active ? 'bg-slate-100' : ''
-                          } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
+                          className={`${active ? 'bg-slate-100' : ''
+                            } flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700`}
                         >
                           <FiLogOut className="w-4 h-4 text-slate-400" />
                           Sign out

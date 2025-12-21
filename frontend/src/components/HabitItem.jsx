@@ -2,7 +2,8 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import {
   EllipsisVerticalIcon,
   PencilSquareIcon,
-  TrashIcon
+  TrashIcon,
+  FireIcon
 } from '@heroicons/react/20/solid';
 
 const HabitItem = ({
@@ -22,19 +23,49 @@ const HabitItem = ({
     }
   };
 
+  // Format the date to match the backend format (YYYY-MM-DD)
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Check if the current date is today or in the future
+  const isFutureDate = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(date) > today;
+  };
+
+  // Show streak if it's greater than 0
+  // For mobile, we want to show the streak regardless of the date
+  const shouldShowStreak = habit.currentStreak > 0;
+
   return (
-    <div className="group relative flex items-center gap-2">
+    <div className="group relative flex items-center gap-2 w-full">
       <button
-        onClick={() => onToggleHabit(habit._id, date)}
+        onClick={async () => {
+          await onToggleHabit(habit._id, date);
+          // Force a refresh of the habits to update the streak
+          // This will be handled by the parent component
+        }}
         className={`flex-1 flex items-center justify-between p-3 rounded-xl border transition-all ${
           completed
             ? 'bg-emerald-50 border-emerald-200'
             : 'bg-white border-slate-200 hover:border-emerald-300'
         }`}
       >
-        <span className="text-sm font-medium text-slate-700 truncate pr-2">
-          {habit.name}
-        </span>
+        <div className="flex items-center min-w-0">
+          <span className="text-sm font-medium text-slate-700 truncate">
+            {habit.name}
+          </span>
+          {shouldShowStreak && (
+            <div className="ml-2 flex items-center">
+              <span className="text-xs font-medium text-amber-600">{habit.currentStreak}</span>
+              <FireIcon className="w-4 h-4 ml-0.5 text-amber-500" />
+            </div>
+          )}
+        </div>
 
         <span
           className={`h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-full border text-xs font-bold transition-colors ${

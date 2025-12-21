@@ -217,7 +217,7 @@ export const calculatePremiumStats = (habits, targetDate = new Date()) => {
             consistencyScore
         },
         rankings: {
-            all: habits.sort((a, b) => (b.completions?.length || 0) - (a.completions?.length || 0)),
+            all: [...habits],  // Return a copy to avoid modifying the original array
             top: habits[0],
             bottom: habits[habits.length - 1]
         },

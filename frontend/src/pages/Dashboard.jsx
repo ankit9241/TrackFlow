@@ -145,56 +145,95 @@ const Dashboard = () => {
   const handleToggleHabit = async (habitId, date) => {
     const dateStr = formatDate(date);
     const previousHabits = [...habits];
+    const wasCompleted = isHabitCompleted(habitId, date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const entryDate = new Date(date);
+    entryDate.setHours(0, 0, 0, 0);
 
     try {
+      // Optimistic update
       setHabits((prev) =>
-        prev.map((h) =>
-          h._id === habitId
-            ? {
-              ...h,
-              completions: [
-                ...(h.completions || []),
-                {
-                  _id: `temp-${Date.now()}`,
-                  habit: habitId,
-                  date: dateStr,
-                  completed: !isHabitCompleted(habitId, dateStr),
-                  isOptimistic: true,
-                },
-              ],
+        prev.map((h) => {
+          if (h._id !== habitId) return h;
+          
+          // Create new completions array with the toggled status
+          const newCompletions = [
+            ...(h.completions || []).filter(c => formatDate(c.date) !== dateStr),
+            {
+              _id: `temp-${Date.now()}`,
+              habit: habitId,
+              date: dateStr,
+              completed: !wasCompleted,
+              isOptimistic: true,
+            },
+          ];
+          
+          // Filter for completed entries up to today and sort by date (newest first)
+          const completedEntries = newCompletions
+            .filter(c => {
+              const entryDate = new Date(c.date);
+              entryDate.setHours(0, 0, 0, 0);
+              return c.completed && entryDate <= today;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          let newStreak = 0;
+          let lastCompleted = null;
+          
+          if (completedEntries.length > 0) {
+            // If we have completed entries, calculate the current streak
+            let currentDate = new Date(completedEntries[0].date);
+            currentDate.setHours(0, 0, 0, 0);
+            lastCompleted = currentDate;
+            
+            // Start with a streak of 1 for the most recent completion
+            newStreak = 1;
+            
+            // Check previous days to see if they were completed consecutively
+            for (let i = 1; i < completedEntries.length; i++) {
+              const prevDate = new Date(completedEntries[i].date);
+              prevDate.setHours(0, 0, 0, 0);
+              
+              const dayDiff = Math.round((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+              
+              if (dayDiff === 1) {
+                // Consecutive day, increment streak
+                newStreak++;
+                currentDate = prevDate;
+              } else if (dayDiff > 1) {
+                // Gap found, stop checking
+                break;
+              }
+              // If dayDiff === 0, it's a duplicate entry for the same day, skip it
             }
-            : h
-        )
+          }
+          
+          return {
+            ...h,
+            completions: newCompletions,
+            currentStreak: newStreak,
+            bestStreak: Math.max(h.bestStreak || 0, newStreak),
+            lastCompleted: completedEntries[0]?.date || null
+          };
+        })
       );
 
-      const res = await toggleHabitCompletion(
-        habitId,
-        dateStr,
-        !isHabitCompleted(habitId, dateStr)
-      );
-
-      const entry = res.data.data?.entry || res.data.entry;
-
-      setHabits((prev) =>
-        prev.map((h) =>
-          h._id === habitId
-            ? {
-              ...h,
-              completions: [
-                ...h.completions.filter(
-                  (c) => formatDate(c.date) !== dateStr && !c.isOptimistic
-                ),
-                { ...entry, date: formatDate(entry.date) },
-              ],
-            }
-            : h
-        )
-      );
+      // Make the API call in the background
+      toggleHabitCompletion(habitId, dateStr, !wasCompleted)
+        .catch(error => {
+          // If there's an error, revert to previous state
+          setHabits(previousHabits);
+          toast.error(
+            error.response?.data?.message || "Failed to update habit status"
+          );
+        });
+      
     } catch (error) {
+      // This should only catch sync errors, not the API call errors
+      console.error('Error in handleToggleHabit:', error);
       setHabits(previousHabits);
-      toast.error(
-        error.response?.data?.message || "Failed to update habit status"
-      );
+      toast.error("An unexpected error occurred");
     }
   };
 

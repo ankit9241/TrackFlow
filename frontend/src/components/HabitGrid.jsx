@@ -130,7 +130,17 @@ const HabitGrid = ({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 overflow-hidden">
                       <div className="w-1 h-8 rounded-full bg-slate-200 group-hover:bg-emerald-500 transition" />
-                      <span className="truncate">{habit.name}</span>
+                      <div className="flex items-center min-w-0">
+                        <span className="truncate">{habit.name}</span>
+                        {habit.currentStreak > 0 && (
+                          <div className="ml-2 flex items-center">
+                            <span className="text-xs font-medium text-amber-600">{habit.currentStreak}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-0.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.332-.441-.616-.952.04-1.6a1.001 1.001 0 00-.247-1.43z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <Menu as="div" className="relative flex-shrink-0">

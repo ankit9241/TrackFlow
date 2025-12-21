@@ -135,59 +135,94 @@ habitSchema.pre('save', async function () {
 // Update streaks when a completion is toggled
 habitSchema.methods.updateStreak = async function (completed) {
   try {
-    // Get all completed entries, sorted by date DESCENDING (newest first)
-    const completedEntries = await this.model('HabitEntry')
+    // Get all completed entries up to current date, sorted by date DESCENDING (newest first)
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    
+    const allEntries = await this.model('HabitEntry')
       .find({
         habit: this._id,
-        completed: true
+        completed: true,
+        date: { $lte: today } // Only include entries up to current date
       })
-      .sort({ date: -1 }) // Sort by date descending
+      .sort({ date: -1 })
       .select('date')
       .lean();
+      
+    // Set up today's date at midnight
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    
+    // Filter out any future dates that might be included
+    const validEntries = allEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      entryDate.setHours(0, 0, 0, 0);
+      return entryDate <= todayMidnight;
+    });
 
     let currentStreak = 0;
 
-    // Calculate Today and Yesterday (normalized to midnight)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (completedEntries.length > 0) {
-      // 1. Check if the most recent completion is active (Today or Yesterday)
-      const lastEntryDate = new Date(completedEntries[0].date);
+    if (validEntries.length > 0) {
+      // Start with the most recent valid entry
+      let lastEntryDate = new Date(validEntries[0].date);
       lastEntryDate.setHours(0, 0, 0, 0);
+      
+      // If the last entry is in the future, find the most recent past entry
+      
+      if (lastEntryDate > todayMidnight) {
+        const pastEntry = validEntries.find(entry => {
+          const entryDate = new Date(entry.date);
+          entryDate.setHours(0, 0, 0, 0);
+          return entryDate <= todayMidnight;
+        });
+        
+        if (!pastEntry) {
+          // No valid past entries
+          this.currentStreak = 0;
+          this.lastCompleted = null;
+          await this.save();
+          return this;
+        }
+        lastEntryDate = new Date(pastEntry.date);
+        lastEntryDate.setHours(0, 0, 0, 0);
+      }
 
-      // If the last completion is older than yesterday, the Current Streak is 0.
+      // If the most recent entry is today or yesterday, we might have a current streak
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
       if (lastEntryDate.getTime() >= yesterday.getTime()) {
         currentStreak = 1;
-
         let previousDate = lastEntryDate;
 
-        // 2. Count backwards looking for consecutive days
-        for (let i = 1; i < completedEntries.length; i++) {
-          const entryDate = new Date(completedEntries[i].date);
-          entryDate.setHours(0, 0, 0, 0);
+        // Now check previous valid entries for consecutive completion
+        for (let i = 0; i < validEntries.length; i++) {
+          const currentDate = new Date(validEntries[i].date);
+          currentDate.setHours(0, 0, 0, 0);
+          
+          // Skip if this is the first entry (already processed)
+          if (i === 0) continue;
+          
+          // Skip if date is in the future (shouldn't happen due to filter, but just in case)
+          if (currentDate > today) continue;
 
-          // Calculate difference in days
-          const diffTime = previousDate.getTime() - entryDate.getTime();
+          // Calculate days between previous and current entry
+          const diffTime = previousDate.getTime() - currentDate.getTime();
           const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
 
           if (diffDays === 1) {
-            // It's the previous day -> Continue Streak
+            // Consecutive day found, increment streak
             currentStreak++;
-            previousDate = entryDate;
-          } else if (diffDays === 0) {
-            // Same day entry (duplicate or multiple completions) -> Ignore logic, continue loop
-            continue;
-          } else {
-            // Gap found -> Streak Broken
+            previousDate = currentDate;
+          } else if (diffDays > 1) {
+            // Gap found, streak is broken
             break;
           }
+          // If diffDays === 0, it's a duplicate entry for the same day, skip it
         }
       }
 
-      this.lastCompleted = completedEntries[0].date;
+      this.lastCompleted = validEntries[0].date;
     } else {
       this.lastCompleted = null;
     }

@@ -60,10 +60,20 @@ const createHabit = async (req, res) => {
 // @access  Private
 const getHabits = async (req, res) => {
   try {
+    // First get all habits
     const habits = await Habit.find({ userId: req.user._id, isActive: true })
       .populate('totalCompletions')
       .populate('successfulCompletions');
-    res.json(habits);
+      
+    // Update streaks for each habit
+    const habitsWithUpdatedStreaks = await Promise.all(
+      habits.map(async (habit) => {
+        await habit.updateStreak();
+        return await Habit.findById(habit._id); // Re-fetch to get updated streak
+      })
+    );
+    
+    res.json(habitsWithUpdatedStreaks);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

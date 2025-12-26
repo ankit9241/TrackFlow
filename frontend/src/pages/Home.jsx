@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   CheckBadgeIcon,
   ChartPieIcon,
@@ -7,21 +7,20 @@ import {
   CalendarDaysIcon,
   ArrowTrendingUpIcon,
   SparklesIcon,
-} from '@heroicons/react/24/outline';
-import HeroImage from '../assets/hero-image.png';
+} from "@heroicons/react/24/outline";
+import HeroImage from "../assets/hero-image2.png";
 
-import '@fontsource/montserrat/300.css';
-import '@fontsource/montserrat/400.css';
-import '@fontsource/montserrat/500.css';
-import '@fontsource/montserrat/600.css';
-import '@fontsource/montserrat/700.css';
+import "@fontsource/montserrat/300.css";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/500.css";
+import "@fontsource/montserrat/600.css";
+import "@fontsource/montserrat/700.css";
 
 const Home = () => {
   const { currentUser } = useAuth();
 
   return (
-    <div className="min-h-screen bg-teal-50 font-montserrat selection:bg-emerald-100 selection:text-emerald-900">
-
+    <div className="min-h-screen bg-[#e9f8f3] font-montserrat selection:bg-emerald-100 selection:text-emerald-900">
       {/* ================= HERO ================= */}
       <section className="relative pt-8 pb-24 px-4 overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -42,16 +41,16 @@ const Home = () => {
               </h1>
 
               <p className="max-w-xl mx-auto lg:mx-0 text-lg text-slate-600 leading-relaxed mb-10">
-                TrackFlow helps you build habits through clarity, momentum,
-                and visual accountability - without noise or guilt.
+                TrackFlow helps you build habits through clarity, momentum, and
+                visual accountability - without noise or guilt.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Link
-                  to={currentUser ? '/dashboard' : '/register'}
+                  to={currentUser ? "/dashboard" : "/register"}
                   className="px-6 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-700"
                 >
-                  {currentUser ? 'Go to Dashboard' : 'Start Free'}
+                  {currentUser ? "Go to Dashboard" : "Start Free"}
                 </Link>
 
                 <Link
@@ -89,21 +88,21 @@ const Home = () => {
           {[
             {
               icon: CalendarDaysIcon,
-              title: 'Plan your habits',
-              desc: 'Create habits with clear timeframes and intent. Focus on what matters.',
-              step: '01'
+              title: "Plan your habits",
+              desc: "Create habits with clear timeframes and intent. Focus on what matters.",
+              step: "01",
             },
             {
               icon: CheckBadgeIcon,
-              title: 'Show up daily',
-              desc: 'Mark progress visually with a sleek monthly grid. Build your flow.',
-              step: '02'
+              title: "Show up daily",
+              desc: "Mark progress visually with a sleek monthly grid. Build your flow.",
+              step: "02",
             },
             {
               icon: ArrowTrendingUpIcon,
-              title: 'Review momentum',
-              desc: 'Understand patterns through calm, premium analytics and trends.',
-              step: '03'
+              title: "Review momentum",
+              desc: "Understand patterns through calm, premium analytics and trends.",
+              step: "03",
             },
           ].map((step) => (
             <div
@@ -142,9 +141,9 @@ const Home = () => {
           </h2>
 
           <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
-            TrackFlow isn’t about perfection.
-            It’s about reducing friction, visualizing effort,
-            and letting consistency compound quietly over time.
+            TrackFlow isn’t about perfection. It’s about reducing friction,
+            visualizing effort, and letting consistency compound quietly over
+            time.
           </p>
         </div>
       </section>

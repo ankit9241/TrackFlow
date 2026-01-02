@@ -1,42 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   EnvelopeIcon,
   ChatBubbleLeftRightIcon,
   MapPinIcon,
   PaperAirplaneIcon,
-} from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
-import api from '../api/api';
+  XMarkIcon,
+  EnvelopeOpenIcon,
+} from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await api.post('/contact', formData);
-      toast.success("Message sent! We'll get back to you soon.");
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send message. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setFormData({ name: "", email: "", subject: "", message: "" });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white pt-16 pb-24 text-slate-700 selection:bg-emerald-100 selection:text-emerald-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Left: Info */}
           <div className="lg:col-span-5">
             <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-white/50 shadow-sm">
               <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
@@ -44,8 +40,8 @@ const Contact = () => {
               </h1>
 
               <p className="text-lg text-slate-600 mb-12 leading-relaxed">
-                Have questions or want to discuss a project? We'd love to hear from you.
-                Reach out and We will get back to you within 24 hours.
+                Have questions or want to discuss a project? We'd love to hear
+                from you. Reach out and We will get back to you within 24 hours.
               </p>
 
               <div className="space-y-8">
@@ -66,7 +62,9 @@ const Contact = () => {
                     <ChatBubbleLeftRightIcon className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Support Hours</h3>
+                    <h3 className="font-semibold text-slate-900">
+                      Support Hours
+                    </h3>
                     <p className="text-slate-600 text-sm mt-1">
                       Monday - Friday, 9am - 5pm IST
                     </p>
@@ -92,8 +90,12 @@ const Contact = () => {
           <div className="lg:col-span-7">
             <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Send us a message</h2>
-                <p className="text-slate-500">We'll get back to you as soon as possible</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Send us a message
+                </h2>
+                <p className="text-slate-500">
+                  We'll get back to you as soon as possible
+                </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,7 +109,9 @@ const Contact = () => {
                         type="text"
                         required
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         placeholder="Your Name"
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-slate-400 transition-all"
                       />
@@ -123,7 +127,9 @@ const Contact = () => {
                         type="email"
                         required
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
                         placeholder="Your Email"
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-slate-400 transition-all"
                       />
@@ -140,7 +146,9 @@ const Contact = () => {
                       type="text"
                       required
                       value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, subject: e.target.value })
+                      }
                       placeholder="How can we help you?"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-slate-400 transition-all"
                     />
@@ -156,7 +164,9 @@ const Contact = () => {
                       rows="5"
                       required
                       value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
                       placeholder="Tell us more about your inquiry..."
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-slate-400 resize-none transition-all"
                     />
@@ -169,8 +179,12 @@ const Contact = () => {
                     disabled={isSubmitting}
                     className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg hover:shadow-emerald-100 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <PaperAirplaneIcon className={`w-5 h-5 ${isSubmitting ? 'animate-pulse' : ''}`} />
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                    <PaperAirplaneIcon
+                      className={`w-5 h-5 ${
+                        isSubmitting ? "animate-pulse" : ""
+                      }`}
+                    />
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </button>
                   <p className="mt-3 text-xs text-slate-500 text-center">
                     We'll respond to your message within 24 hours
@@ -181,6 +195,49 @@ const Contact = () => {
           </div>
         </div>
       </div>
+
+      {/* Service Unavailable Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-900">
+                Service Unavailable
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="text-center py-6">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 mb-4">
+                <EnvelopeOpenIcon className="h-8 w-8 text-emerald-600" />
+              </div>
+              <p className="text-slate-600 mb-6">
+                Our contact form is currently unavailable. Please send your
+                message directly to:
+              </p>
+              <div className="bg-slate-50 p-4 rounded-lg mb-6">
+                <a
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=ankitkumar.iitp09@gmail.com&su=Regarding%20TrackFlow"
+                  className="text-emerald-600 font-medium hover:underline break-all"
+                >
+                  ankitkumar.iitp09@gmail.com
+                </a>
+              </div>
+              <button
+                onClick={closeModal}
+                className="w-full py-3 px-6 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

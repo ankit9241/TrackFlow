@@ -18,7 +18,6 @@ import MobileDayView from "../components/MobileDayView";
 import { calculatePremiumStats } from "../utils/analyticsHelper";
 import OverviewCards from "../components/analytics/OverviewCards";
 import AnalyticsTrends from "../components/analytics/AnalyticsTrends";
-import AnalyticsHabits from "../components/analytics/AnalyticsHabits";
 import AnalyticsInsights from "../components/analytics/AnalyticsInsights";
 import HabitModal from "../components/modals/HabitModal";
 
@@ -152,24 +151,18 @@ const Dashboard = () => {
     entryDate.setHours(0, 0, 0, 0);
 
     try {
-      // Optimistic update
       setHabits((prev) =>
         prev.map((h) => {
           if (h._id !== habitId) return h;
-          
-          // Create new completions array with the toggled status
+
           const newCompletions = [
             ...(h.completions || []).filter(c => formatDate(c.date) !== dateStr),
             {
-              _id: `temp-${Date.now()}`,
-              habit: habitId,
               date: dateStr,
-              completed: !wasCompleted,
-              isOptimistic: true,
+              completed: !wasCompleted
             },
           ];
-          
-          // Filter for completed entries up to today and sort by date (newest first)
+
           const completedEntries = newCompletions
             .filter(c => {
               const entryDate = new Date(c.date);
@@ -177,38 +170,32 @@ const Dashboard = () => {
               return c.completed && entryDate <= today;
             })
             .sort((a, b) => new Date(b.date) - new Date(a.date));
-          
+
           let newStreak = 0;
           let lastCompleted = null;
-          
+
           if (completedEntries.length > 0) {
-            // If we have completed entries, calculate the current streak
             let currentDate = new Date(completedEntries[0].date);
             currentDate.setHours(0, 0, 0, 0);
             lastCompleted = currentDate;
-            
-            // Start with a streak of 1 for the most recent completion
+
             newStreak = 1;
-            
-            // Check previous days to see if they were completed consecutively
+
             for (let i = 1; i < completedEntries.length; i++) {
               const prevDate = new Date(completedEntries[i].date);
               prevDate.setHours(0, 0, 0, 0);
-              
+
               const dayDiff = Math.round((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-              
+
               if (dayDiff === 1) {
-                // Consecutive day, increment streak
                 newStreak++;
                 currentDate = prevDate;
               } else if (dayDiff > 1) {
-                // Gap found, stop checking
                 break;
               }
-              // If dayDiff === 0, it's a duplicate entry for the same day, skip it
             }
           }
-          
+
           return {
             ...h,
             completions: newCompletions,
@@ -219,10 +206,8 @@ const Dashboard = () => {
         })
       );
 
-      // Make the API call in the background
       toggleHabitCompletion(habitId, dateStr, !wasCompleted)
         .catch(error => {
-          // If there's an error, revert to previous state
           setHabits(previousHabits);
           toast.error(
             error.response?.data?.message || "Failed to update habit status"
@@ -230,7 +215,6 @@ const Dashboard = () => {
         });
       
     } catch (error) {
-      // This should only catch sync errors, not the API call errors
       console.error('Error in handleToggleHabit:', error);
       setHabits(previousHabits);
       toast.error("An unexpected error occurred");
@@ -335,7 +319,6 @@ const Dashboard = () => {
         </div>
 
         <AnalyticsTrends habits={habits} stats={stats} selectedDate={selectedDate} />
-        {/* <AnalyticsHabits rankings={stats.rankings} overview={stats.overview} /> */}
         <AnalyticsInsights stats={stats} habits={habits} />
 
         <HabitModal

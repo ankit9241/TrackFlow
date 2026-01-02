@@ -14,15 +14,14 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (token) {
-          const response = await api.get('/auth/me');
-          setCurrentUser(response.data);
-        }
+        if (!token) return;
+
+        const response = await api.get('/auth/me');
+        setCurrentUser(response.data);
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('token');
@@ -34,46 +33,37 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // Login function
   const login = async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setCurrentUser(user);
-      navigate('/dashboard');
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed'
-      };
-    }
-  };
-
-  // Register function
-  const register = async (name, email, password) => {
-    try {
-      const response = await api.post('/auth/register', { name, email, password });
-      const { token, user } = response.data;
+      
       localStorage.setItem('token', token);
       setCurrentUser(user);
       navigate('/dashboard');
       return true;
     } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+      setError(error.response?.data?.message || 'Login failed');
+      return false;
     }
   };
 
-  // Logout function
+  const register = async (name, email, password) => {
+    try {
+      const response = await api.post('/auth/register', { name, email, password });
+      return login(email, password);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Registration failed');
+      return false;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setCurrentUser(null);
     navigate('/login');
   };
 
-  // Update user data
   const updateUser = (userData) => {
     setCurrentUser(prev => ({ ...prev, ...userData }));
   };

@@ -14,9 +14,15 @@ import {
 import {
   format,
   subDays,
+  addDays,
+  isSameDay,
+  differenceInDays,
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
+  startOfYear,
+  endOfYear,
+  getDay,
   startOfMonth,
   endOfMonth,
   isSameMonth
@@ -116,17 +122,20 @@ const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
     const today = new Date();
     const isCurrentMonth = isSameMonth(selectedDate, today);
     const referenceDate = isCurrentMonth ? today : endOfMonth(selectedDate);
-    const currentWeekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
+    const monthStart = startOfMonth(referenceDate);
+    const monthEnd = endOfMonth(referenceDate);
+    let weekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    if (weekStart < monthStart) weekStart = monthStart;
 
-    for (let i = 4; i >= 0; i--) {
-      const weekStart = subDays(currentWeekStart, i * 7);
+    while (weekStart <= monthEnd) {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const weekEndDate = weekEnd > monthEnd ? monthEnd : weekEnd;
 
       let count = 0;
       habits.forEach(habit => {
         habit.completions?.forEach(c => {
           const cDate = new Date(c.date);
-          if (c.completed && cDate >= weekStart && cDate <= weekEnd) {
+          if (c.completed && cDate >= weekStart && cDate <= weekEndDate) {
             count++;
           }
         });
@@ -134,16 +143,15 @@ const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
 
       data.push({
         label: format(weekStart, 'MMM d'),
-        fullLabel: `${format(weekStart, 'MMM d')} - ${format(
-          weekEnd,
-          'MMM d'
-        )}`,
+        fullLabel: `${format(weekStart, 'MMM d')} - ${format(weekEndDate, 'MMM d')}`,
         count
       });
+
+      weekStart = addDays(weekEndDate, 1);
     }
 
     return data;
-  }, [habits]);
+  }, [habits, selectedDate]);
 
   return (
     <div className="space-y-6 mb-8">
@@ -168,7 +176,7 @@ const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
             </div>
           </div>
 
-          <div className="h-[250px]">
+          <div className="h-[250px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activityData} margin={{ top: 10, left: -20 }}>
                 <defs>

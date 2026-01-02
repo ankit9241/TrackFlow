@@ -3,7 +3,6 @@ import {
   EllipsisVerticalIcon,
   PencilSquareIcon,
   TrashIcon,
-  FireIcon
 } from '@heroicons/react/20/solid';
 
 const HabitItem = ({
@@ -37,17 +36,11 @@ const HabitItem = ({
     return new Date(date) > today;
   };
 
-  // Show streak if it's greater than 0
-  // For mobile, we want to show the streak regardless of the date
-  const shouldShowStreak = habit.currentStreak > 0;
-
   return (
     <div className="group relative flex items-center gap-2 w-full">
       <button
         onClick={async () => {
           await onToggleHabit(habit._id, date);
-          // Force a refresh of the habits to update the streak
-          // This will be handled by the parent component
         }}
         className={`flex-1 flex items-center justify-between p-3 rounded-xl border transition-all ${
           completed
@@ -59,12 +52,6 @@ const HabitItem = ({
           <span className="text-sm font-medium text-slate-700 truncate">
             {habit.name}
           </span>
-          {shouldShowStreak && (
-            <div className="ml-2 flex items-center">
-              <span className="text-xs font-medium text-amber-600">{habit.currentStreak}</span>
-              <FireIcon className="w-4 h-4 ml-0.5 text-amber-500" />
-            </div>
-          )}
         </div>
 
         <span

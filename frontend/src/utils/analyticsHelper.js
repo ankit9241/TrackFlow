@@ -1,6 +1,7 @@
 import {
     format,
     subDays,
+    subMonths,
     isSameDay,
     differenceInDays,
     startOfWeek,
@@ -19,17 +20,25 @@ export const calculatePremiumStats = (habits, targetDate = new Date()) => {
     const referenceDate = isCurrentMonth ? today : endOfMonth(targetDate);
 
     const activeHabitsCount = habits.length;
-
-    // 1. Map all dates with at least one completion
-    // Format: "yyyy-MM-dd" -> count
     const dailyCompletionsMap = {};
+    const heatmapCompletionsMap = {};
+
+    const currentMonthStart = startOfMonth(referenceDate);
+    const currentMonthEnd = endOfMonth(referenceDate);
+    const sixMonthsAgo = startOfMonth(subMonths(referenceDate, 5));
 
     habits.forEach(habit => {
         if (!habit.completions) return;
         habit.completions.forEach(c => {
-            if (c.completed) {
-                const dateStr = typeof c.date === 'string' ? c.date : format(new Date(c.date), 'yyyy-MM-dd');
+            const completionDate = typeof c.date === 'string' ? new Date(c.date) : new Date(c.date);
+            const dateStr = format(completionDate, 'yyyy-MM-dd');
+            
+            if (c.completed && completionDate >= currentMonthStart && completionDate <= currentMonthEnd) {
                 dailyCompletionsMap[dateStr] = (dailyCompletionsMap[dateStr] || 0) + 1;
+            }
+            
+            if (c.completed && completionDate >= sixMonthsAgo && completionDate <= today) {
+                heatmapCompletionsMap[dateStr] = (heatmapCompletionsMap[dateStr] || 0) + 1;
             }
         });
     });
@@ -41,145 +50,265 @@ export const calculatePremiumStats = (habits, targetDate = new Date()) => {
         .filter(d => d <= referenceDateStr)
         .sort();
 
-    // 2. Global Current Streak
-    // If it's a future month, current streak is 0 relative to that time
     let currentStreak = 0;
     if (!isFutureMonth) {
-        let checkDate = referenceDate;
-        let checkDateStr = format(checkDate, 'yyyy-MM-dd');
-
-        if (!dailyCompletionsMap[checkDateStr]) {
-            checkDate = subDays(referenceDate, 1);
-            checkDateStr = format(checkDate, 'yyyy-MM-dd');
-        }
-
-        while (dailyCompletionsMap[checkDateStr] > 0) {
-            currentStreak++;
-            checkDate = subDays(checkDate, 1);
-            checkDateStr = format(checkDate, 'yyyy-MM-dd');
-        }
-    }
-
-    // 3. Best Global Streak
-    let maxStreak = 0;
-    if (!isFutureMonth && completionDates.length > 0) {
-        const sortedTimestamps = completionDates.map(d => new Date(d).getTime()).sort((a, b) => a - b);
-        let tempStreak = 1;
-        maxStreak = 1;
-
-        for (let i = 1; i < sortedTimestamps.length; i++) {
-            const prev = sortedTimestamps[i - 1];
-            const curr = sortedTimestamps[i];
-            const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 1) {
-                tempStreak++;
-            } else {
-                maxStreak = Math.max(maxStreak, tempStreak);
-                tempStreak = 1;
+        const monthStart = startOfMonth(referenceDate);
+        const today = new Date(referenceDate);
+        
+        const monthDates = eachDayOfInterval({
+            start: monthStart,
+            end: today
+        }).reverse();
+        
+        for (const date of monthDates) {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            if (dailyCompletionsMap[dateStr] > 0) {
+                currentStreak++;
+            } else if (date.getTime() !== today.getTime()) {
+                break;
             }
         }
-        maxStreak = Math.max(maxStreak, tempStreak);
     }
 
-    // 4. Overall Completion % (Month to Date / Selected Month)
-    const startOfSelectedMonth = startOfMonth(targetDate);
-    const daysElapsedInContext = isFutureMonth ? 0 : (differenceInDays(referenceDate, startOfSelectedMonth) + 1);
-
-    let actualCompletionsMTD = 0;
+    let maxStreak = 0;
     if (!isFutureMonth) {
-        for (let i = 0; i < daysElapsedInContext; i++) {
-            const d = subDays(referenceDate, i);
-            if (d < startOfSelectedMonth) break;
-            const dStr = format(d, 'yyyy-MM-dd');
-            actualCompletionsMTD += (dailyCompletionsMap[dStr] || 0);
-        }
+        const monthDates = eachDayOfInterval({
+            start: startOfMonth(referenceDate),
+            end: referenceDate
+        });
+        
+        let tempStreak = 0;
+        let bestStreak = 0;
+        
+        monthDates.forEach(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            if (dailyCompletionsMap[dateStr] > 0) {
+                tempStreak++;
+                bestStreak = Math.max(bestStreak, tempStreak);
+            } else {
+                tempStreak = 0;
+            }
+        });
+        
+        maxStreak = bestStreak;
     }
 
-    const activeHabitsInMonth = habits.filter(h => {
-        const hStart = h.startDate ? new Date(h.startDate) : null;
-        const hEnd = h.endDate ? new Date(h.endDate) : null;
-        const monthEnd = endOfMonth(targetDate);
-        return (!hStart || hStart <= monthEnd) && (!hEnd || hEnd >= startOfSelectedMonth);
-    });
-
-    let possibleCompletionsMTD = activeHabitsInMonth.length * daysElapsedInContext;
-    const overallCompletionRate = possibleCompletionsMTD > 0
-        ? Math.round((actualCompletionsMTD / possibleCompletionsMTD) * 100)
+    const startOfSelectedMonth = startOfMonth(referenceDate);
+    const daysElapsedInContext = isFutureMonth ? 0 : (differenceInDays(referenceDate, startOfSelectedMonth) + 1);
+    
+    let actualCompletionsMTD = 0;
+    let totalPossibleCompletions = 0;
+    
+    if (!isFutureMonth) {
+        const monthDates = eachDayOfInterval({
+            start: startOfMonth(referenceDate),
+            end: referenceDate
+        });
+        
+        monthDates.forEach(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const completions = dailyCompletionsMap[dateStr] || 0;
+            actualCompletionsMTD += completions;
+            
+            const activeHabitsOnDay = habits.filter(h => {
+                const hStart = h.startDate ? new Date(h.startDate) : null;
+                const hEnd = h.endDate ? new Date(h.endDate) : null;
+                const hStartDate = hStart ? new Date(hStart.setHours(0,0,0,0)) : null;
+                const hEndDate = hEnd ? new Date(hEnd.setHours(23,59,59,999)) : null;
+                const currentDate = new Date(date);
+                
+                return (!hStartDate || currentDate >= hStartDate) && 
+                       (!hEndDate || currentDate <= hEndDate);
+            }).length;
+            
+            totalPossibleCompletions += activeHabitsOnDay;
+        });
+    }
+    const completionRateMTD = totalPossibleCompletions > 0 
+        ? Math.round((actualCompletionsMTD / totalPossibleCompletions) * 100)
         : 0;
 
-    // 5. Recovery Rate
     const gaps = [];
-    if (!isFutureMonth && completionDates.length > 0) {
-        const sortedTimestamps = completionDates.map(d => new Date(d).getTime()).sort((a, b) => a - b);
-        for (let i = 1; i < sortedTimestamps.length; i++) {
-            const prev = sortedTimestamps[i - 1];
-            const curr = sortedTimestamps[i];
-            const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-            if (diffDays > 1) gaps.push(diffDays - 1);
-        }
-    }
-    const avgGap = gaps.length > 0 ? (gaps.reduce((a, b) => a + b, 0) / gaps.length).toFixed(1) : "0";
-    const recoveryMessage = isFutureMonth ? "Awaiting data..." : (gaps.length === 0 ? "Unstoppable streak!" : `${avgGap} day${avgGap === "1.0" ? '' : 's'}`);
-
-    // 6. Best/Worst Day
-    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
-    const startOfWindow = subDays(referenceDate, 30);
     if (!isFutureMonth) {
-        Object.keys(dailyCompletionsMap).forEach(d => {
-            if (d >= format(startOfWindow, 'yyyy-MM-dd') && d <= referenceDateStr) {
-                const dayIdx = getDay(new Date(d));
-                dayCounts[dayIdx] += dailyCompletionsMap[d];
+        const monthDates = eachDayOfInterval({
+            start: startOfMonth(referenceDate),
+            end: referenceDate
+        });
+
+        let lastCompletedDate = null;
+        monthDates.forEach((date) => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            if (dailyCompletionsMap[dateStr] > 0) {
+                if (lastCompletedDate !== null) {
+                    const daysBetween = differenceInDays(date, lastCompletedDate) - 1;
+                    if (daysBetween > 0) {
+                        gaps.push(daysBetween);
+                    }
+                }
+                lastCompletedDate = date;
             }
         });
     }
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const validDayCounts = dayCounts.filter(v => v > 0);
-    const maxVal = Math.max(...dayCounts);
-    const minVal = validDayCounts.length > 0 ? Math.min(...validDayCounts) : 0;
 
+    const avgGap = gaps.length > 0 
+        ? (gaps.reduce((a, b) => a + b, 0) / gaps.length).toFixed(1) 
+        : "0.0";
+        
+    const recoveryMessage = (gaps.length === 0) 
+        ? (Object.keys(dailyCompletionsMap).length > 0 ? "Perfect consistency!" : "No activity yet") 
+        : `${avgGap} day${avgGap === "1.0" ? '' : 's'}`;
+
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+    const startOfWindow = subDays(referenceDate, 30);
+    if (!isFutureMonth) {
+        const daysInWindow = eachDayOfInterval({
+            start: startOfWindow,
+            end: referenceDate
+        });
+
+        daysInWindow.forEach(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const dayOfWeek = getDay(date);
+            dayCounts[dayOfWeek] += dailyCompletionsMap[dateStr] || 0;
+        });
+    }
+
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const maxVal = Math.max(...dayCounts);
+    const minVal = Math.min(...dayCounts.filter(val => val > 0));
     const bestDay = maxVal > 0 ? days[dayCounts.indexOf(maxVal)] : "None";
     const worstDay = (minVal > 0 && minVal < maxVal) ? days[dayCounts.indexOf(minVal)] : "None";
 
-    // 7. Weekend vs Weekday Performance
     let weekendCompletions = 0;
     let weekdayCompletions = 0;
     let weekendPossible = 0;
     let weekdayPossible = 0;
 
     if (!isFutureMonth) {
-        for (let i = 0; i < 30; i++) {
-            const d = subDays(referenceDate, i);
+        const startDate = startOfMonth(referenceDate);
+        const endDate = isSameDay(referenceDate, today) ? today : referenceDate;
+        
+        const daysInPeriod = eachDayOfInterval({ start: startDate, end: endDate });
+        
+        daysInPeriod.forEach(d => {
             const dayIdx = getDay(d);
-            const isWeekend = dayIdx === 0 || dayIdx === 6;
+            const isWeekend = dayIdx === 0 || dayIdx === 6; // 0 = Sunday, 6 = Saturday
             const dStr = format(d, 'yyyy-MM-dd');
+            
+            // Calculate active habits for this day
+            const activeHabitsOnDay = habits.filter(h => {
+                const hStart = h.startDate ? new Date(h.startDate) : null;
+                const hEnd = h.endDate ? new Date(h.endDate) : null;
+                const hStartDate = hStart ? new Date(hStart.setHours(0,0,0,0)) : null;
+                const hEndDate = hEnd ? new Date(hEnd.setHours(23,59,59,999)) : null;
+                const currentDate = new Date(d);
+                
+                return (!hStartDate || currentDate >= hStartDate) && 
+                       (!hEndDate || currentDate <= hEndDate);
+            }).length;
+            
             if (isWeekend) {
-                weekendPossible += activeHabitsCount;
+                weekendPossible += activeHabitsOnDay;
                 weekendCompletions += (dailyCompletionsMap[dStr] || 0);
             } else {
-                weekdayPossible += activeHabitsCount;
+                weekdayPossible += activeHabitsOnDay;
                 weekdayCompletions += (dailyCompletionsMap[dStr] || 0);
             }
-        }
+        });
     }
 
     const weekendRate = weekendPossible > 0 ? Math.round((weekendCompletions / weekendPossible) * 100) : 0;
     const weekdayRate = weekdayPossible > 0 ? Math.round((weekdayCompletions / weekdayPossible) * 100) : 0;
 
-    // 8. Consistency Score
-    const streakWeight = Math.min(currentStreak / 30, 1) * 40;
-    const rateWeight = (overallCompletionRate / 100) * 40;
-    const recoveryWeight = (avgGap <= 1 && !isFutureMonth ? 20 : avgGap <= 3 && !isFutureMonth ? 10 : 0);
-    const consistencyScore = isFutureMonth ? 0 : Math.round(streakWeight + rateWeight + recoveryWeight);
+    const activeDays = Object.keys(dailyCompletionsMap).filter(d => {
+        const date = new Date(d);
+        return date <= (isSameDay(referenceDate, today) ? today : referenceDate);
+    }).length;
+    
+    let totalAssignedTasks = 0;
+    let totalCompletedTasks = 0;
+    let daysWithCompletions = 0;
+    
+    if (!isFutureMonth) {
+        const startDate = startOfMonth(referenceDate);
+        const endDate = isSameDay(referenceDate, today) ? today : referenceDate;
+        
+        const daysToCheck = eachDayOfInterval({
+            start: startDate,
+            end: endDate
+        });
+        
+        daysToCheck.forEach(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const activeHabitsOnDay = habits.filter(h => {
+                const hStart = h.startDate ? new Date(h.startDate) : null;
+                const hEnd = h.endDate ? new Date(h.endDate) : null;
+                const hStartDate = hStart ? new Date(hStart.setHours(0,0,0,0)) : null;
+                const hEndDate = hEnd ? new Date(hEnd.setHours(23,59,59,999)) : null;
+                const currentDate = new Date(date);
+                
+                return (!hStartDate || currentDate >= hStartDate) && 
+                       (!hEndDate || currentDate <= hEndDate);
+            }).length;
+            
+            const completions = dailyCompletionsMap[dateStr] || 0;
+            totalAssignedTasks += activeHabitsOnDay;
+            totalCompletedTasks += completions;
+            
+            if (completions > 0) {
+                daysWithCompletions++;
+            }
+        });
+    }
+    
+    let consistencyScore = 0;
+    
+    if (!isFutureMonth && daysWithCompletions > 0) {
+        const completionRate = totalAssignedTasks > 0 
+            ? (totalCompletedTasks / totalAssignedTasks) * 70
+            : 0;
+        
+        const totalDays = differenceInDays(
+            isSameDay(referenceDate, today) ? today : referenceDate,
+            startOfMonth(referenceDate)
+        ) + 1;
+        
+        const consistency = (daysWithCompletions / totalDays) * 30;
+        const baseScore = Math.round(completionRate + consistency);
+        const streakBonus = currentStreak > 0 ? Math.min(20, currentStreak * 2) : 0;
+        const gapPenalty = gaps.length > 0 
+            ? Math.min(20, gaps.reduce((a, b) => a + b, 0) * 2) 
+            : 0;
+        
+        consistencyScore = Math.max(0, Math.min(100, baseScore + streakBonus - gapPenalty));
+    }
 
-    // 9. Heatmap Data (Keep global as requested)
     const heatmapData = [];
-    Object.entries(dailyCompletionsMap).forEach(([date, count]) => {
-        const intensity = count >= activeHabitsCount ? 4 : count >= activeHabitsCount * 0.75 ? 3 : count >= activeHabitsCount * 0.5 ? 2 : 1;
-        heatmapData.push({ date, count, intensity });
+    const heatmapEndDate = today;
+    const heatmapStartDate = sixMonthsAgo;
+    
+    const allHeatmapDates = eachDayOfInterval({
+        start: heatmapStartDate,
+        end: heatmapEndDate
+    });
+    
+    allHeatmapDates.forEach(date => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const count = heatmapCompletionsMap[dateStr] || 0;
+        const intensity = count >= activeHabitsCount ? 4 : 
+                         count >= activeHabitsCount * 0.75 ? 3 : 
+                         count >= activeHabitsCount * 0.5 ? 2 : 
+                         count > 0 ? 1 : 0;
+        
+        heatmapData.push({ 
+            date: dateStr, 
+            count, 
+            intensity,
+            isCurrentMonth: date.getMonth() === referenceDate.getMonth() && 
+                          date.getFullYear() === referenceDate.getFullYear()
+        });
     });
 
-    // 10. Weekly Momentum
     let weeklyMomentum = 0;
     if (!isFutureMonth) {
         const startOfCurrentWeek = startOfWeek(referenceDate);
@@ -190,18 +319,26 @@ export const calculatePremiumStats = (habits, targetDate = new Date()) => {
         let lastWeekCompletions = 0;
 
         Object.entries(dailyCompletionsMap).forEach(([dateStr, count]) => {
-            const d = new Date(dateStr);
-            if (d >= startOfCurrentWeek && d <= endOfCurrentWeek) currentWeekCompletions += count;
-            else if (d >= startOfLastWeek && d <= endOfLastWeek) lastWeekCompletions += count;
+            const date = new Date(dateStr);
+            if (date >= startOfCurrentWeek && date <= endOfCurrentWeek) {
+                currentWeekCompletions += count;
+            } else if (date >= startOfLastWeek && date <= endOfLastWeek) {
+                lastWeekCompletions += count;
+            }
         });
 
-        if (lastWeekCompletions > 0) weeklyMomentum = Math.round(((currentWeekCompletions - lastWeekCompletions) / lastWeekCompletions) * 100);
-        else if (currentWeekCompletions > 0) weeklyMomentum = 100;
+        if (lastWeekCompletions > 0) {
+            weeklyMomentum = Math.round(
+                ((currentWeekCompletions - lastWeekCompletions) / lastWeekCompletions) * 100
+            );
+        } else if (currentWeekCompletions > 0) {
+            weeklyMomentum = 100;
+        }
     }
 
     return {
         overview: {
-            completionRate: overallCompletionRate,
+            completionRate: completionRateMTD,
             currentStreak,
             bestStreak: maxStreak,
             activeHabits: activeHabitsCount,

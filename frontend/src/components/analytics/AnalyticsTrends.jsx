@@ -124,6 +124,7 @@ const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
     const referenceDate = isCurrentMonth ? today : endOfMonth(selectedDate);
     const monthStart = startOfMonth(referenceDate);
     const monthEnd = endOfMonth(referenceDate);
+    
     let weekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
     if (weekStart < monthStart) weekStart = monthStart;
 
@@ -132,14 +133,35 @@ const AnalyticsTrends = ({ habits, stats, selectedDate }) => {
       const weekEndDate = weekEnd > monthEnd ? monthEnd : weekEnd;
 
       let count = 0;
+      const weekCompletions = new Set();
+
       habits.forEach(habit => {
-        habit.completions?.forEach(c => {
-          const cDate = new Date(c.date);
-          if (c.completed && cDate >= weekStart && cDate <= weekEndDate) {
-            count++;
+        if (!habit.completions) return;
+        
+        habit.completions.forEach(completion => {
+          if (!completion.completed) return;
+          
+          try {
+            let completionDate = new Date(completion.date);
+            completionDate.setHours(12, 0, 0, 0);
+            
+            const weekStartCopy = new Date(weekStart);
+            weekStartCopy.setHours(0, 0, 0, 0);
+            
+            const weekEndCopy = new Date(weekEndDate);
+            weekEndCopy.setHours(23, 59, 59, 999);
+            
+            if (completionDate >= weekStartCopy && completionDate <= weekEndCopy) {
+              const dateKey = format(completionDate, 'yyyy-MM-dd');
+              weekCompletions.add(`${habit._id}-${dateKey}`);
+            }
+          } catch (e) {
+            console.error('Error processing completion date:', e);
           }
         });
       });
+
+      count = weekCompletions.size;
 
       data.push({
         label: format(weekStart, 'MMM d'),

@@ -13,11 +13,11 @@ __pycache__/
 .env.production.local
 
 # Build files
-/dist/
-/build/
-/out/
-.next/
-.nuxt/
+/frontend/dist/
+/backend/build/
+/frontend/out/
+/frontend/.next/
+/frontend/.nuxt/
 
 # Debug logs
 npm-debug.log*
